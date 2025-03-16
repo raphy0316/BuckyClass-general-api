@@ -1,9 +1,9 @@
 import {getReview} from "@/app/services/postgreService";
 
-export async function GET(request: Request, context: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const params = await context.params;
-        const review = await getReview(params.id);
+        const id = (await params).id
+        const review = await getReview(id);
 
         return Response.json(
             review,

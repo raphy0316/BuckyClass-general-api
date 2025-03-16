@@ -1,9 +1,9 @@
 import { getCourseById } from "@/app/services/postgreService";
 
-export async function GET(request: Request, context: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const params = await context.params;
-        const courseData = await getCourseById(params.id);
+        const id = (await params).id
+        const courseData = await getCourseById(id);
 
         if (!courseData) {
             return new Response(
