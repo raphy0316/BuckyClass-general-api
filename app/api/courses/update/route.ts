@@ -1,7 +1,7 @@
 import {fetchCourses, fetchGrade} from "@/app/services/madgradesService";
 import {saveCourses, saveGrades} from "@/app/services/postgreService";
 
-export async function POST(request : Request){
+export async function POST(){
     try {
         const courses = await fetchCourses();
 

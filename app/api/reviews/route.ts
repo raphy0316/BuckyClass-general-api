@@ -1,4 +1,4 @@
-import {getReview, saveReview} from "@/app/services/postgreService";
+import { saveReview } from "@/app/services/postgreService";
 import { Review } from "@/app/types/types";
 
 export async function POST(request : Request){
