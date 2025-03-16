@@ -31,7 +31,7 @@ export const saveGrades = async (grades: Grade): Promise<void> => {
 
     try {
         const query = `
-            INSERT INTO grades (course_id, total, a_per, ab_per, b_per, bc_per, c_per, d_per, f_per, other_per)
+            INSERT INTO course_grades (course_id, total, a_per, ab_per, b_per, bc_per, c_per, d_per, f_per, other_per)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             ON CONFLICT (course_id) 
             DO UPDATE SET total = EXCLUDED.total, a_per = EXCLUDED.a_per, ab_per = EXCLUDED.ab_per, 
