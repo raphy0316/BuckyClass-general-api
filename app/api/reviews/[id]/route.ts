@@ -7,7 +7,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
         return Response.json(
             review,
-            { status: 200}
+            { status: 200 }
         );
     } catch (error) {
         console.error("Failed to update courses and grades:", error);

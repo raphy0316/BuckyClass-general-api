@@ -1,5 +1,5 @@
 import { pool } from "../config/db";
-import { Course, Grade, Review } from "../types/types";
+import {Course, Grade, Review, VerifiedUser} from "../types/types";
 
 
 export const saveCourses = async (courses: Course[]): Promise<void> => {
@@ -122,7 +122,7 @@ export const saveReview = async (review: Review): Promise<void> => {
                 INSERT INTO reviews ( course_id, user_id, rating, comment)
                 VALUES ($1, $2, $3, $4)
                 ON CONFLICT (course_id,user_id) 
-                DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment;
+                DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, edited = true;
             `;
 
         await client.query(query, [
@@ -138,6 +138,8 @@ export const saveReview = async (review: Review): Promise<void> => {
     }
 };
 
+
+
 export const getReview = async (id : string): Promise<Review[] | null> => {
     const client = await pool.connect();
     try {
@@ -148,3 +150,47 @@ export const getReview = async (id : string): Promise<Review[] | null> => {
         client.release();
     }
 };
+
+export const saveVerifiedUser = async (verifiedUser: VerifiedUser[]): Promise<void> => {
+    const client = await pool.connect();
+    try {
+
+        const valuesStr = verifiedUser.map((_, i) => `($${i * 2 + 1}, $${i * 2 + 2})`).join(", ");
+        const params = verifiedUser.flatMap(v => [v.course_id, v.user_id]);
+
+        const query = `
+            INSERT INTO verified_users (course_id, user_id)
+            VALUES ${valuesStr}
+            ON CONFLICT DO NOTHING;
+        `;
+
+        await client.query(query,params);
+
+        console.log(`Verified User saved`);
+    } finally {
+        client.release();
+    }
+};
+
+export const updateLikeReview = async (course_id: string, user_id : string, cancel: boolean): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        const query = `
+                UPDATE reviews
+                SET like_count = like_count + $1
+                WHERE course_id = $2 AND user_id = $3;
+            `;
+        const incrementValue = cancel ? -1 : 1;
+
+        await client.query(query, [
+            incrementValue,
+            course_id,
+            user_id
+        ]);
+
+        console.log(`Like increased`);
+    } finally {
+        client.release();
+    }
+};
+

@@ -22,3 +22,8 @@ export interface Review {
     rating: number;
     comment: string;
 }
+
+export interface VerifiedUser {
+    course_id: string;
+    user_id: string;
+}
