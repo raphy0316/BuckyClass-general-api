@@ -1,5 +1,5 @@
 import { pool } from "../config/db";
-import { Course, Grade, Review } from "../types/types";
+import { Course, Grade, Review, Instructor, CourseOffering, SectionGrade, Section, CourseOfferingSection} from "../types/types";
 
 
 export const saveCourses = async (courses: Course[]): Promise<void> => {
@@ -148,3 +148,290 @@ export const getReview = async (id : string): Promise<Review[] | null> => {
         client.release();
     }
 };
+
+export const saveInstructors = async (instructors: Instructor[]): Promise<void> => {
+    const client = await pool.connect();
+
+    try {
+        if (!instructors || instructors.length === 0) {
+            console.log("No instructors to save.");
+            return;
+        }
+
+        const instructorQuery = `
+            INSERT INTO instructors (id, name)
+            VALUES ($1, $2)
+            ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
+        `;
+
+        const instructorCourseQuery = `
+            INSERT INTO "InstructorCourseOffering" (instructor_id, offering_id)
+            VALUES ($1, $2)
+            ON CONFLICT (instructor_id, offering_id) DO NOTHING;
+        `;
+
+        for (const instructor of instructors) {
+            await client.query(instructorQuery, [
+                instructor.id,  
+                instructor.name
+            ]);
+
+            if (instructor.courseOfferings) {
+                for (const offering of instructor.courseOfferings) {
+                    await client.query(instructorCourseQuery, [
+                        instructor.id,
+                        offering.id
+                    ]);
+                }
+            }
+        }
+        console.log(`${instructors.length} instructors saved/updated in PostgreSQL`);
+    } catch (error) {
+        console.error("Failed to save instructors:", error);
+    } finally {
+        client.release();
+    }
+};
+
+export const getTopAGradeCourses = async (): Promise<any[]> => {
+    const client = await pool.connect();
+
+    try {
+        const result = await client.query(`
+            SELECT 
+                g.course_id,
+                c.name AS course_name,
+                g.a_per
+            FROM course_grades g
+            JOIN courses c ON g.course_id = c.id
+            ORDER BY g.a_per DESC
+            LIMIT 1;
+        `);
+        return result.rows;
+    } catch (error) {
+        console.error("getTopAGradeCourses failed:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const getLatestReviewsWithCourse = async (): Promise<any[]> => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT 
+                r.course_id,
+                c.name AS course_name,
+                r.user_id,
+                r.rating,
+                r.comment,
+                r.created_at
+            FROM reviews r
+            JOIN courses c ON r.course_id = c.id
+            ORDER BY r.created_at DESC
+            LIMIT 1;
+        `);
+        return result.rows;
+    } catch (error) {
+        console.error("getLatestReviewsWithCourse failed:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const getTopViewedCourses = async (): Promise<any[]> => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(`
+            SELECT id, name, views
+            FROM courses
+            ORDER BY views DESC
+            LIMIT 1;
+        `);
+        return result.rows;
+    } catch (error) {
+        console.error("Failed to fetch top viewed courses:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const incrementCourseViews = async (courseId: string): Promise<void> => {
+    const client = await pool.connect();
+
+    try {
+        await client.query(
+            `UPDATE courses SET views = views + 1 WHERE id = $1`,
+            [courseId]
+        );
+        console.log(` view increment sucecess: ${courseId}`);
+    } catch (error) {
+        console.error("view increment failed:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+export const getAverageRatingByCourse = async (courseId: string): Promise<any[]> => {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT AVG(rating) AS average_rating FROM reviews WHERE course_id = $1`,
+        [courseId]
+      );
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  };
+
+  export const getAverageScoreByTermForCourse = async (
+    courseId: string
+  ): Promise<{ course_id: string; term: string; avg_gpa: number }[]> => {
+    const client = await pool.connect();
+    try {
+      const query = `
+        SELECT
+          co.course_id,
+          co.semester AS term,
+          ROUND(AVG(
+            sg.a_per * 4 +
+            sg.ab_per * 3.5 +
+            sg.b_per * 3 +
+            sg.bc_per * 2.5 +
+            sg.c_per * 2 +
+            sg.d_per * 1
+          ) / 100, 2) AS avg_gpa
+        FROM "section_grades" sg
+        JOIN "sections" s ON sg.section_id = s.id
+        JOIN "CourseOfferingSections" cos ON s.id = cos.section_id
+        JOIN "courseOffering" co ON cos.offering_id = co.id
+        WHERE co.course_id = $1
+        GROUP BY co.course_id, co.semester
+        ORDER BY co.semester;
+      `;
+      const result = await client.query(query, [courseId]);
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  };
+  
+  
+  export const getAverageScoreByInstructor = async (): Promise<
+  { instructor_id: number; average_gpa: number }[]> => {
+  const client = await pool.connect();
+  try {
+    const query = `
+    SELECT ico.instructor_id, 
+           ROUND(AVG(
+             (sg.a_per * 4.0 + sg.ab_per * 3.5 + sg.b_per * 3.0 + 
+              sg.bc_per * 2.5 + sg.c_per * 2.0 + sg.d_per * 1.0 + sg.f_per * 0.0)
+           ), 2) AS average_gpa
+    FROM section_grades sg
+    JOIN sections s ON sg.section_id = s.id
+    JOIN "CourseOfferingSections" cos ON s.id = cos.section_id
+    JOIN "InstructorCourseOffering" ico ON cos.offering_id = ico.offering_id
+    GROUP BY ico.instructor_id
+    ORDER BY average_gpa DESC;
+  `;
+  
+    const res = await client.query(query);
+    return res.rows;
+  } catch (error) {
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const getARatioByInstructor = async (): Promise<
+  { instructor_id: number; a_ratio: number }[]> => {
+  const client = await pool.connect();
+  try {
+    const query = `
+    SELECT ico.instructor_id, 
+           ROUND(AVG(sg.a_per), 2) AS a_ratio
+    FROM section_grades sg
+    JOIN "CourseOfferingSections" cos ON sg.section_id = cos.section_id
+    JOIN "InstructorCourseOffering" ico ON cos.offering_id = ico.offering_id
+    WHERE sg.a_per IS NOT NULL
+    GROUP BY ico.instructor_id
+    ORDER BY a_ratio DESC;
+  `;
+  
+    const res = await client.query(query);
+    return res.rows;
+  } finally {
+    client.release();
+  }
+};
+
+export const isNewUser = async (firebase_uid: string): Promise<boolean | null> => {
+    const client = await pool.connect();
+
+    try {
+        const result = await client.query(
+            `SELECT is_new_user FROM users WHERE firebase_uid = $1`,
+            [firebase_uid]
+        );
+
+        if (result.rowCount === 0) {
+            return null; // 유저 없음
+        }
+
+        return result.rows[0].is_new_user;
+    } finally {
+        client.release();
+    }
+};
+
+export const getCourseInfoById = async (id: string): Promise<{
+  course: Course;
+  grade?: Grade;
+  averageGpa: number | null;
+  instructors: string[];
+} | null> => {
+  const client = await pool.connect();
+
+  try {
+    const courseQuery = `SELECT * FROM courses WHERE id = $1`;
+    const courseResult = await client.query(courseQuery, [id]);
+    if (courseResult.rows.length === 0) return null;
+    const course: Course = courseResult.rows[0];
+
+    const gradeQuery = `SELECT * FROM course_grades WHERE course_id = $1`;
+    const gradeResult = await client.query(gradeQuery, [id]);
+    const grade: Grade | undefined = gradeResult.rows[0];
+
+    const avgGpaQuery = `
+      SELECT ROUND(
+        (a_per * 4 + ab_per * 3.5 + b_per * 3 + bc_per * 2.5 + c_per * 2 + d_per * 1 + f_per * 0) / 100, 2
+      ) AS average_gpa
+      FROM course_grades
+      WHERE course_id = $1
+    `;
+    const avgGpaResult = await client.query(avgGpaQuery, [id]);
+    const averageGpa: number | null = avgGpaResult.rows[0]?.average_gpa ?? null;
+
+    const instructorQuery = `
+      SELECT i.name
+      FROM instructors i
+      JOIN "InstructorCourseOffering" ico ON i.id = ico.instructor_id
+      JOIN "courseOffering" co ON ico.offering_id = co.id
+      WHERE co.course_id = $1
+      LIMIT 1
+    `;
+    const instructorResult = await client.query(instructorQuery, [id]);
+    const instructors: string[] = instructorResult.rows.map(r => r.name);
+
+    return { course, grade, averageGpa, instructors };
+  } finally {
+    client.release();
+  }
+};
+ 
