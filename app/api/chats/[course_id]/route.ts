@@ -1,12 +1,9 @@
 import { db } from "@/app/lib/firebaseAdmin";
 import { saveVerifiedUser } from "@/app/services/postgreService";
 
-export async function DELETE(
-    request: Request,
-    { params }: { params: { course_id: string } }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { course_id } = params;
+        const course_id = (await params).id
 
         if (!course_id) {
             return new Response(
