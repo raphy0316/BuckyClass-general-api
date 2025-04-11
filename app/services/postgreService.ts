@@ -138,6 +138,20 @@ export const saveReview = async (review: Review): Promise<void> => {
     }
 };
 
+export const deleteReview = async (course_id: string, user_id: string): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        const query = `
+            DELETE FROM reviews
+            WHERE course_id = $1 AND user_id = $2;
+        `;
+        await client.query(query, [course_id, user_id]);
+        console.log('Review deleted');
+    } finally {
+        client.release();
+    }
+};
+
 
 
 export const getReview = async (id : string): Promise<Review[] | null> => {
@@ -193,4 +207,40 @@ export const updateLikeReview = async (course_id: string, user_id : string, canc
         client.release();
     }
 };
+
+export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        await client.query(
+            `
+      INSERT INTO users (firebase_uid, name, email, profile_picture)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (firebase_uid) DO NOTHING;
+    `,
+            [profile.firebase_uid, profile.name, profile.email, profile.profile_picture || null]
+        );
+        console.log(`User profile saved`);
+    } finally {
+        client.release();
+    }
+};
+
+export const updateUserProfile = async (profile: Partial<UserProfile> & { firebase_uid: string }): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        await client.query(
+            `
+      UPDATE users
+      SET name = COALESCE($2, name),
+          profile_picture = COALESCE($3, profile_picture)
+      WHERE firebase_uid = $1;
+    `,
+            [profile.firebase_uid, profile.name || null, profile.profile_picture || null]
+        );
+        console.log(`User profile updated`);
+    } finally {
+        client.release();
+    }
+};
+
 

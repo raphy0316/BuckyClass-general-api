@@ -27,3 +27,10 @@ export interface VerifiedUser {
     course_id: string;
     user_id: string;
 }
+
+export type UserProfile = {
+    firebase_uid: string;
+    name: string;
+    email: string;
+    profile_picture?: string;
+};
