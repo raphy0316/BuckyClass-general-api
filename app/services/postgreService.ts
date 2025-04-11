@@ -1,5 +1,5 @@
 import { pool } from "../config/db";
-import {Course, Grade, Review, VerifiedUser} from "../types/types";
+import {Course, Grade, Review, VerifiedUser, UserProfile} from "../types/types";
 
 
 export const saveCourses = async (courses: Course[]): Promise<void> => {

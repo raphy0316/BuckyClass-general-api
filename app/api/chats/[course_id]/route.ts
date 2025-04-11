@@ -10,7 +10,7 @@ export async function DELETE(
 
         if (!course_id) {
             return new Response(
-                JSON.stringify({ error: "Missing course_id" }),
+                JSON.stringify({ error: "Missing id" }),
                 { status: 400, headers: { "Content-Type": "application/json" } }
             );
         }
