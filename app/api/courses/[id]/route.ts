@@ -1,9 +1,10 @@
-import { getCourseById } from "@/app/services/postgreService";
+import { getCourseInfoById, incrementCourseViews} from "@/app/services/postgreService";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const id = (await params).id
-        const courseData = await getCourseById(id);
+        await incrementCourseViews(id);
+        const courseData = await getCourseInfoById(id);
 
         if (!courseData) {
             return new Response(
