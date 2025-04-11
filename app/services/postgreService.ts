@@ -330,7 +330,7 @@ export const getAverageRatingByCourse = async (courseId: string): Promise<any[]>
     SELECT ico.instructor_id, 
            ROUND(AVG(
              (sg.a_per * 4.0 + sg.ab_per * 3.5 + sg.b_per * 3.0 + 
-              sg.bc_per * 2.5 + sg.c_per * 2.0 + sg.d_per * 1.0 + sg.f_per * 0.0)
+              sg.bc_per * 2.5 + sg.c_per * 2.0 + sg.d_per * 1.0 + sg.f_per * 0.0) / 100
            ), 2) AS average_gpa
     FROM section_grades sg
     JOIN sections s ON sg.section_id = s.id
