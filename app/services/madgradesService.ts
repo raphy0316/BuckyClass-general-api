@@ -1,6 +1,6 @@
 import axios from "axios";
 import { ENV } from "../config/env";
-import { Course, Grade, CourseOffering, Instructor, InstructorCourseOffering, SectionGrade, Section  } from "../types/types";
+import { Course, Grade} from "../types/types";
 
 const ENDPOINTS = {
     COURSES: "/courses",

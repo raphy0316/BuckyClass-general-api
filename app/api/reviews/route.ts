@@ -1,4 +1,4 @@
-import { saveReview } from "@/app/services/postgreService";
+import {deleteReview, saveReview} from "@/app/services/postgreService";
 import { Review } from "@/app/types/types";
 
 export async function POST(request : Request){
@@ -24,6 +24,18 @@ export async function POST(request : Request){
             { error: "Internal Server Error" },
             { status: 500 }
         );
+    }
+}
+
+export async function DELETE(request: Request) {
+    const { course_id, user_id } = await request.json();
+
+    try {
+        await deleteReview(course_id, user_id);
+        return Response.json({ message: 'Review deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting review:', error);
+        return Response.json({ error: 'Failed to delete review' }, { status: 500 });
     }
 }
 

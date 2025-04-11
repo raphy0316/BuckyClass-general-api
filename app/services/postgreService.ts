@@ -1,5 +1,5 @@
 import { pool } from "../config/db";
-import { Course, Grade, Review, Instructor, CourseOffering, SectionGrade, Section, CourseOfferingSection} from "../types/types";
+import {Course, Grade, Review, VerifiedUser, UserProfile, Instructor} from "../types/types";
 
 
 export const saveCourses = async (courses: Course[]): Promise<void> => {
@@ -138,6 +138,22 @@ export const saveReview = async (review: Review): Promise<void> => {
     }
 };
 
+export const deleteReview = async (course_id: string, user_id: string): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        const query = `
+            DELETE FROM reviews
+            WHERE course_id = $1 AND user_id = $2;
+        `;
+        await client.query(query, [course_id, user_id]);
+        console.log('Review deleted');
+    } finally {
+        client.release();
+    }
+};
+
+
+
 export const getReview = async (id : string): Promise<Review[] | null> => {
     const client = await pool.connect();
     try {
@@ -188,6 +204,25 @@ export const saveInstructors = async (instructors: Instructor[]): Promise<void> 
         console.log(`${instructors.length} instructors saved/updated in PostgreSQL`);
     } catch (error) {
         console.error("Failed to save instructors:", error);
+    }
+}
+        
+export const saveVerifiedUser = async (verifiedUser: VerifiedUser[]): Promise<void> => {
+    const client = await pool.connect();
+    try {
+
+        const valuesStr = verifiedUser.map((_, i) => `($${i * 2 + 1}, $${i * 2 + 2})`).join(", ");
+        const params = verifiedUser.flatMap(v => [v.course_id, v.user_id]);
+
+        const query = `
+            INSERT INTO verified_users (course_id, user_id)
+            VALUES ${valuesStr}
+            ON CONFLICT DO NOTHING;
+        `;
+
+        await client.query(query,params);
+
+        console.log(`Verified User saved`);
     } finally {
         client.release();
     }
@@ -236,6 +271,26 @@ export const getLatestReviewsWithCourse = async (): Promise<any[]> => {
     } catch (error) {
         console.error("getLatestReviewsWithCourse failed:", error);
         throw error;
+    }
+}
+
+export const updateLikeReview = async (course_id: string, user_id : string, cancel: boolean): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        const query = `
+                UPDATE reviews
+                SET like_count = like_count + $1
+                WHERE course_id = $2 AND user_id = $3;
+            `;
+        const incrementValue = cancel ? -1 : 1;
+
+        await client.query(query, [
+            incrementValue,
+            course_id,
+            user_id
+        ]);
+
+        console.log(`Like increased`);
     } finally {
         client.release();
     }
@@ -271,6 +326,21 @@ export const incrementCourseViews = async (courseId: string): Promise<void> => {
     } catch (error) {
         console.error("view increment failed:", error);
         throw error;
+    }
+}
+
+export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        await client.query(
+            `
+      INSERT INTO users (firebase_uid, name, email, profile_picture)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (firebase_uid) DO NOTHING;
+    `,
+            [profile.firebase_uid, profile.name, profile.email, profile.profile_picture || null]
+        );
+        console.log(`User profile saved`);
     } finally {
         client.release();
     }
@@ -385,6 +455,25 @@ export const isNewUser = async (firebase_uid: string): Promise<boolean | null> =
         }
 
         return result.rows[0].is_new_user;
+    }
+    finally {
+        client.release();
+    }
+}
+
+export const updateUserProfile = async (profile: Partial<UserProfile> & { firebase_uid: string }): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        await client.query(
+            `
+      UPDATE users
+      SET name = COALESCE($2, name),
+          profile_picture = COALESCE($3, profile_picture)
+      WHERE firebase_uid = $1;
+    `,
+            [profile.firebase_uid, profile.name || null, profile.profile_picture || null]
+        );
+        console.log(`User profile updated`);
     } finally {
         client.release();
     }
@@ -434,4 +523,3 @@ export const getCourseInfoById = async (id: string): Promise<{
     client.release();
   }
 };
- 
