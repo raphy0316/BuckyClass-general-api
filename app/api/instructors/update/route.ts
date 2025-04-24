@@ -12,8 +12,7 @@ export async function POST() {
         await saveInstructors(instructors);
 
         return Response.json({ message: "Instructors updated successfully" }, { status: 200 });
-    } catch (error) {
-        console.error("Failed to update instructor", error);
+    } catch (_error) {
         return Response.json(
             { error: "Failed to update instructor" },
             { status: 500 }
