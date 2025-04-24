@@ -2,10 +2,10 @@ import { getAverageScoreByTermForCourse } from "@/app/services/postgreService";
 
 export async function GET(
   request: Request,
-  context: { params: { courseId: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const courseId = context.params.courseId;
+    const courseId = (await params).id;
     const result = await getAverageScoreByTermForCourse(courseId);
     return Response.json(result, { status: 200 });
   } catch (error) {
