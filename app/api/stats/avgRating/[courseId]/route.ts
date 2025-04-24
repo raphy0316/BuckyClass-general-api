@@ -6,6 +6,7 @@ export async function GET(request: Request, context: { params: { courseId: strin
     const result = await getAverageRatingByCourse(courseId);
     return Response.json(result, { status: 200 });
   } catch (error) {
-    return Response.json({ error: "Failed to fetch average rating" }, { status: 500 });
+      console.error("Failed to  average rating", error);
+      return Response.json({ error: "Failed to fetch average rating" }, { status: 500 });
   }
 }

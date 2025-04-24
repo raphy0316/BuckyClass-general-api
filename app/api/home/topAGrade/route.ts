@@ -5,6 +5,7 @@ export async function GET() {
         const topCourses = await getTopAGradeCourses();
         return Response.json(topCourses, { status: 200 });
     } catch (error) {
+        console.error("Failed to fetch top A-grade courses", error);
         return Response.json({ error: "Failed to fetch top A-grade courses" }, { status: 500 });
     }
 }
