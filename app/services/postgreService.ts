@@ -1,5 +1,6 @@
 import { pool } from "../config/db";
-import {Course, Grade, Review, VerifiedUser, UserProfile, Instructor} from "../types/types";
+import {Course, Grade, Review, VerifiedUser, UserProfile,
+     Instructor, TopAGradeCourse, ReviewWithCourse, TopViewedCourse, AverageRatingResult} from "../types/types";
 
 
 export const saveCourses = async (courses: Course[]): Promise<void> => {
@@ -228,7 +229,7 @@ export const saveVerifiedUser = async (verifiedUser: VerifiedUser[]): Promise<vo
     }
 };
 
-export const getTopAGradeCourses = async (): Promise<any[]> => {
+export const getTopAGradeCourses = async (): Promise<TopAGradeCourse[]> => {
     const client = await pool.connect();
 
     try {
@@ -251,7 +252,7 @@ export const getTopAGradeCourses = async (): Promise<any[]> => {
     }
 };
 
-export const getLatestReviewsWithCourse = async (): Promise<any[]> => {
+export const getLatestReviewsWithCourse = async (): Promise<ReviewWithCourse[]> => {
     const client = await pool.connect();
     try {
         const result = await client.query(`
@@ -296,7 +297,7 @@ export const updateLikeReview = async (course_id: string, user_id : string, canc
     }
 };
 
-export const getTopViewedCourses = async (): Promise<any[]> => {
+export const getTopViewedCourses = async (): Promise<TopViewedCourse[]> => {
     const client = await pool.connect();
     try {
         const result = await client.query(`
@@ -346,7 +347,7 @@ export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
     }
 };
 
-export const getAverageRatingByCourse = async (courseId: string): Promise<any[]> => {
+export const getAverageRatingByCourse = async (courseId: string): Promise<AverageRatingResult[]> => {
     const client = await pool.connect();
     try {
       const result = await client.query(

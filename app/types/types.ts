@@ -54,7 +54,7 @@ export interface SectionGrade {
     d_per: number;
     f_per: number;
     other_per: number;
-    instructors: any[];
+    instructors: Instructor[];
     sectionType: string;
 }
 export interface Section {
@@ -78,3 +78,28 @@ export type UserProfile = {
     email: string;
     profile_picture?: string;
 };
+
+export interface TopAGradeCourse {
+    course_id: string;
+    course_name: string;
+    a_per: number;
+}
+export interface ReviewWithCourse {
+    course_id: string;
+    course_name: string;
+    user_id: string;
+    rating: number;         
+    comment: string;
+    created_at: string;  
+  }
+
+  export interface TopViewedCourse {
+    id: string;
+    name: string;
+    views: number;
+}
+
+export interface AverageRatingResult {
+    average_rating: number | null;
+  }
+  

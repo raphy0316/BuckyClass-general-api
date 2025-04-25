@@ -13,6 +13,7 @@ export async function POST() {
 
         return Response.json({ message: "Instructors updated successfully" }, { status: 200 });
     } catch (error) {
+        console.error("Failed to update instructor", error);
         return Response.json(
             { error: "Failed to update instructor" },
             { status: 500 }
