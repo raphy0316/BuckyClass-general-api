@@ -1,6 +1,7 @@
 export interface Course {
     id: string;
     name: string;
+    displayName: string;
 }
 
 export interface Grade {

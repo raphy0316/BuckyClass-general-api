@@ -8,16 +8,19 @@ export const saveCourses = async (courses: Course[]): Promise<void> => {
 
     try {
         const query = `
-            INSERT INTO courses (id, name)
-            VALUES ($1, $2)
+            INSERT INTO courses (id, name, display_name)
+            VALUES ($1, $2, $3)
             ON CONFLICT (id) 
-            DO UPDATE SET name = EXCLUDED.name;
+            DO UPDATE SET 
+                name = EXCLUDED.name,
+                display_name = EXCLUDED.display_name;
         `;
 
         for (const course of courses) {
             await client.query(query, [
                 course.id,
-                course.name
+                course.name,
+                course.displayName
             ]);
         }
 
@@ -257,16 +260,14 @@ export const getLatestReviewsWithCourse = async (): Promise<ReviewWithCourse[]> 
     try {
         const result = await client.query(`
             SELECT 
-                r.course_id,
-                c.name AS course_name,
                 r.user_id,
+                c."display_name" AS course_name,
                 r.rating,
-                r.comment,
-                r.created_at
+                r.comment
             FROM reviews r
             JOIN courses c ON r.course_id = c.id
             ORDER BY r.created_at DESC
-            LIMIT 1;
+            LIMIT 10
         `);
         return result.rows;
     } catch (error) {
@@ -301,10 +302,10 @@ export const getTopViewedCourses = async (): Promise<TopViewedCourse[]> => {
     const client = await pool.connect();
     try {
         const result = await client.query(`
-            SELECT id, name, views
+            SELECT id, "display_name" AS name, views
             FROM courses
             ORDER BY views DESC
-            LIMIT 1;
+            LIMIT 10;
         `);
         return result.rows;
     } catch (error) {

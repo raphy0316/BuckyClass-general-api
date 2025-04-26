@@ -17,9 +17,12 @@ export const fetchCourses = async (): Promise<Course[]> => {
 
     const courses = response.data.results || [];
 
-    return courses.map((course: {uuid : string; name: string}) => ({
+    return courses.map((course: { uuid: string; name: string; number: number; subjects: { abbreviation: string }[] }) => ({
         id: course.uuid,
         name: course.name,
+        displayName: course.subjects?.[0]?.abbreviation && course.number
+            ? `${course.subjects[0].abbreviation} ${course.number}`
+            : course.name 
     }));
 };
 
