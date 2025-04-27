@@ -481,7 +481,7 @@ export const updateUserProfile = async (profile: Partial<UserProfile> & { fireba
       UPDATE users
       SET name = COALESCE($2, name),
           profile_picture = COALESCE($3, profile_picture)
-      WHERE firebase_uid = $1;
+      WHERE id = $1;
     `,
             [profile.firebase_uid, profile.name || null, profile.profile_picture || null]
         );
