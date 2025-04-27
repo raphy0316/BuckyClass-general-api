@@ -540,7 +540,7 @@ export const saveChatRoomMessageCounts = async (chatMessageCounts: ChatMessageCo
 
         for (const [chatId, { messageCount, createdBy, type }] of Object.entries(chatMessageCounts)) {
             const createdByString = (typeof createdBy === "string")
-            ? new Date(parseInt(createdBy)).toLocaleString()  // 문자열을 숫자로 변환 후 날짜 형식으로 변환
+            ? new Date(parseInt(createdBy)).toLocaleString()  
             : createdBy;
             await client.query(query, [
                 chatId, messageCount, createdByString, type

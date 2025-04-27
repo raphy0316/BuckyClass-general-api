@@ -23,9 +23,8 @@ export const fetchRecentChatMessageCounts = async (): Promise<Record<string, { m
       }
     }
 
-    // Fetch createdBy and course from chatInfo
-    const createdBy = chatInfo.createdBy || "Unknown";  // 기본값 설정
-    const type = chatInfo.type || "Unknown";  // 기본값 설정
+    const createdBy = chatInfo.createdBy || "Unknown";  
+    const type = chatInfo.type || "Unknown";  
 
     chatMessageCounts[chatId] = {
         messageCount: count,
