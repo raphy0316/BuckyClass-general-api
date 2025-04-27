@@ -1,6 +1,6 @@
 import { pool } from "../config/db";
 import {Course, Grade, Review, VerifiedUser, UserProfile,
-     Instructor, TopAGradeCourse, ReviewWithCourse, TopViewedCourse, AverageRatingResult} from "../types/types";
+     Instructor, TopAGradeCourse, ReviewWithCourse, TopViewedCourse, AverageRatingResult, ChatMessageCounts} from "../types/types";
 
 
 export const saveCourses = async (courses: Course[]): Promise<void> => {
@@ -262,6 +262,7 @@ export const getLatestReviewsWithCourse = async (): Promise<ReviewWithCourse[]> 
             SELECT 
                 r.user_id,
                 c."display_name" AS course_name,
+                c.name,
                 r.rating,
                 r.comment
             FROM reviews r
@@ -302,7 +303,7 @@ export const getTopViewedCourses = async (): Promise<TopViewedCourse[]> => {
     const client = await pool.connect();
     try {
         const result = await client.query(`
-            SELECT id, "display_name" AS name, views
+            SELECT id, "display_name" AS display_name, name, views
             FROM courses
             ORDER BY views DESC
             LIMIT 10;
@@ -524,4 +525,49 @@ export const getCourseInfoById = async (id: string): Promise<{
   } finally {
     client.release();
   }
+};
+
+export const saveChatRoomMessageCounts = async (chatMessageCounts: ChatMessageCounts): Promise<void> => {
+    const client = await pool.connect();
+
+    try {
+        const query = `
+            INSERT INTO "chatRoom" (id, message_count, created_by, type)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (id)
+            DO UPDATE SET message_count = EXCLUDED.message_count;
+        `;
+
+        for (const [chatId, { messageCount, createdBy, type }] of Object.entries(chatMessageCounts)) {
+            const createdByString = (typeof createdBy === "string")
+            ? new Date(parseInt(createdBy)).toLocaleString()  // 문자열을 숫자로 변환 후 날짜 형식으로 변환
+            : createdBy;
+            await client.query(query, [
+                chatId, messageCount, createdByString, type
+            ]);
+        }
+        
+    } finally {
+        client.release();
+    }
+};
+
+export const getTop3Chats = async (): Promise<{ id: string; name: string; message_count: number }[]> => {
+    const client = await pool.connect();
+
+    try {
+        const query = `
+            SELECT c.id, c.display_name, cr.message_count
+            FROM "chatRoom" cr
+            JOIN "courses" c ON cr.id = c.id
+            WHERE cr.type = 'course'
+            ORDER BY cr.message_count DESC
+            LIMIT 3;
+        `;
+
+        const result = await client.query(query);
+        return result.rows;
+    } finally {
+        client.release();
+    }
 };
