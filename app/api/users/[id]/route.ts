@@ -1,4 +1,6 @@
-import { deleteUserProfile } from "@/app/services/postgreService";
+import { getUserProfile, deleteUserProfile } from "@/app/services/postgreService";
+import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -16,5 +18,44 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
             status: 500,
             headers: { "Content-Type": "application/json" },
         });
+    }
+}
+
+
+
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const id = (await params).id;
+
+        const user = await verifyFirebaseAuth(request);
+        if (!user) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        const userProfile = await getUserProfile(id);
+
+        if (!userProfile) {
+            return NextResponse.json(
+                { error: "User not found" },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json(
+            { user: userProfile },
+            { status: 200 }
+        );
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        return NextResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+        );
     }
 }
