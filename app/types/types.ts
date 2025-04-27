@@ -1,6 +1,7 @@
 export interface Course {
     id: string;
     name: string;
+    displayName: string;
 }
 
 export interface Grade {
@@ -102,4 +103,9 @@ export interface ReviewWithCourse {
 export interface AverageRatingResult {
     average_rating: number | null;
   }
-  
+
+export type ChatMessageCounts = Record<string, { 
+    messageCount: number; 
+    createdBy: string; 
+    type: string; 
+}>;
