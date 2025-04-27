@@ -1,10 +1,13 @@
-import { saveUserProfile, updateUserProfile } from "@/app/services/postgreService";
+import { pool } from "@/app/config/db";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(
-    request: NextRequest
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string; uid: string }> }
 ) {
+    const client = await pool.connect();
+
     try {
         const user = await verifyFirebaseAuth(request);
         if (!user) {
@@ -14,62 +17,12 @@ export async function POST(
             );
         }
 
-        const { firebase_uid, name, email, profile_picture } = await request.json();
+        const { id: chatId, uid: userId } = await params;
 
-        if (!firebase_uid || !name || !email) {
-            return NextResponse.json(
-                { error: "Missing required fields" },
-                { status: 400 }
-            );
-        }
-
-        await saveUserProfile({
-            firebase_uid,
-            name,
-            email,
-            profile_picture
-        });
-
-        return NextResponse.json(
-            { success: true },
-            { status: 201 }
+        await client.query(
+            `DELETE FROM chatroom_participants WHERE chat_id = $1 AND user_id = $2`,
+            [chatId, userId]
         );
-
-    } catch (error) {
-        console.error("Error saving user profile:", error);
-        return NextResponse.json(
-            { error: "Internal Server Error" },
-            { status: 500 }
-        );
-    }
-}
-
-export async function PATCH(
-    request: NextRequest
-) {
-    try {
-        const user = await verifyFirebaseAuth(request);
-        if (!user) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
-        const { firebase_uid, name, profile_picture } = await request.json();
-
-        if (!firebase_uid) {
-            return NextResponse.json(
-                { error: "Missing firebase_uid" },
-                { status: 400 }
-            );
-        }
-
-        await updateUserProfile({
-            firebase_uid,
-            name,
-            profile_picture
-        });
 
         return NextResponse.json(
             { success: true },
@@ -77,10 +30,60 @@ export async function PATCH(
         );
 
     } catch (error) {
-        console.error("Error updating user profile:", error);
+        console.error("Error removing participant:", error);
         return NextResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
         );
+    } finally {
+        client.release();
     }
 }
+
+export async function POST(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string; uid: string }> }
+) {
+    const client = await pool.connect();
+
+    try {
+        const user = await verifyFirebaseAuth(request);
+        if (!user) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        const { id: chatId, uid: userId } = await params;
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: "Missing userId" },
+                { status: 400 }
+            );
+        }
+
+        await client.query(
+            `INSERT INTO chatroom_participants (chat_id, user_id)
+             VALUES ($1, $2)
+             ON CONFLICT DO NOTHING`,
+            [chatId, userId]
+        );
+
+        return NextResponse.json(
+            { success: true },
+            { status: 200 }
+        );
+
+    } catch (error) {
+        console.error("Error adding participant:", error);
+        return NextResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+        );
+    } finally {
+        client.release();
+    }
+}
+

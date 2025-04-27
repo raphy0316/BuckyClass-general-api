@@ -1,28 +1,51 @@
-import { getCourseInfoById, incrementCourseViews} from "@/app/services/postgreService";
+import { getCourseInfoById, incrementCourseViews } from "@/app/services/postgreService";
+import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+
     try {
-        const id = (await params).id
-        await incrementCourseViews(id);
-        const courseData = await getCourseInfoById(id);
-
-        if (!courseData) {
-            return new Response(
-                JSON.stringify({ error: "Course not found" }),
-                { status: 404, headers: { "Content-Type": "application/json" } }
+        const user = await verifyFirebaseAuth(request);
+        if (!user) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
             );
         }
 
-        return new Response(
-            JSON.stringify(courseData),
-            { status: 200, headers: { "Content-Type": "application/json" } }
+        const { id } = await params;
+
+        if (!id) {
+            return NextResponse.json(
+                { error: "Missing course ID" },
+                { status: 400 }
+            );
+        }
+
+        await incrementCourseViews(id);
+
+        const courseData = await getCourseInfoById(id);
+
+        if (!courseData) {
+            return NextResponse.json(
+                { error: "Course not found" },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json(
+            courseData,
+            { status: 200 }
         );
 
     } catch (error) {
         console.error("Failed to fetch course by ID:", error);
-        return new Response(
-            JSON.stringify({ error: "Failed to fetch course" }),
-            { status: 500, headers: { "Content-Type": "application/json" } }
+        return NextResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
         );
     }
 }

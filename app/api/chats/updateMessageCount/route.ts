@@ -1,8 +1,17 @@
 import { fetchRecentChatMessageCounts } from "@/app/services/firebaseService";
 import { saveChatRoomMessageCounts } from "@/app/services/postgreService";
+import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST() {
+export async function POST( request: NextRequest ) {
     try {
+        const user = await verifyFirebaseAuth(request);
+        if (!user) {
+            return NextResponse.json(
+                 { error: "Unauthorized" },
+                 { status: 401 }
+            );
+        }
         const chatMessageCounts = await fetchRecentChatMessageCounts();
 
         if (!chatMessageCounts || Object.keys(chatMessageCounts).length === 0) {

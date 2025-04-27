@@ -1,12 +1,33 @@
 import { getTopViewedCourses } from "@/app/services/postgreService";
+import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET(
+    request: NextRequest
+) {
     try {
-        console.log("Request to /api/home/popular:", request.method);
+        const user = await verifyFirebaseAuth(request);
+        if (!user) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        console.log("[GET] /api/home/popular called by user:", user.uid);
+
         const topViewedCourses = await getTopViewedCourses();
-        return Response.json(topViewedCourses, { status: 200 });
+
+        return NextResponse.json(
+            topViewedCourses,
+            { status: 200 }
+        );
+
     } catch (error) {
         console.error("Failed to fetch popular courses:", error);
-        return Response.json({ error: "Failed to fetch popular courses" }, { status: 500 });
+        return NextResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+        );
     }
 }
