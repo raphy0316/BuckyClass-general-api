@@ -219,7 +219,7 @@ export const saveVerifiedUser = async (verifiedUser: VerifiedUser[]): Promise<vo
         const params = verifiedUser.flatMap(v => [v.course_id, v.user_id]);
 
         const query = `
-            INSERT INTO verified_users (course_id, user_id)
+            INSERT INTO "VerifiedUser" (course_id, user_id)
             VALUES ${valuesStr}
             ON CONFLICT DO NOTHING;
         `;
@@ -227,6 +227,15 @@ export const saveVerifiedUser = async (verifiedUser: VerifiedUser[]): Promise<vo
         await client.query(query,params);
 
         console.log(`Verified User saved`);
+    } finally {
+        client.release();
+    }
+};
+export const deleteUserProfile = async (firebase_uid: string): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        await client.query(`DELETE FROM users WHERE id = $1`, [firebase_uid]);
+        console.log(`User [${firebase_uid}] deleted from users table`);
     } finally {
         client.release();
     }
@@ -337,9 +346,9 @@ export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
     try {
         await client.query(
             `
-      INSERT INTO users (firebase_uid, name, email, profile_picture)
+      INSERT INTO users (id, name, email, profile_picture)
       VALUES ($1, $2, $3, $4)
-      ON CONFLICT (firebase_uid) DO NOTHING;
+      ON CONFLICT (id) DO NOTHING;
     `,
             [profile.firebase_uid, profile.name, profile.email, profile.profile_picture || null]
         );
@@ -567,6 +576,42 @@ export const getTop3Chats = async (): Promise<{ id: string; name: string; messag
 
         const result = await client.query(query);
         return result.rows;
+    } finally {
+        client.release();
+    }
+};
+
+export const insertChatRoom = async (room: {
+    chat_id: string;
+    name: string;
+    type: "course" | "private";
+    created_by: string;
+}): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        await client.query(
+            `
+            INSERT INTO "chatRoom" (id, name, type, created_by)
+            VALUES ($1, $2, $3, $4);
+            `,
+            [
+                room.chat_id,
+                room.name,
+                room.type,
+                room.created_by,
+            ]
+        );
+        console.log(`Chat room [${room.chat_id}] inserted into chatRoom table`);
+    } finally {
+        client.release();
+    }
+};
+
+export const deleteChatRoomById = async (chat_id: string): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        await client.query(`DELETE FROM "chatRoom" WHERE id = $1`, [chat_id]);
+        console.log(`Chat room [${chat_id}] deleted from PostgreSQL`);
     } finally {
         client.release();
     }
