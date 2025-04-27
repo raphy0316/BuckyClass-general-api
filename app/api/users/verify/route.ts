@@ -9,7 +9,7 @@ export async function POST(request : Request){
 
         return Response.json(
             { message: "Verified User saved successfully" },
-            { status: 201}
+            { status: 201 }
         );
     } catch (error) {
         console.error("Error saving review:", error);

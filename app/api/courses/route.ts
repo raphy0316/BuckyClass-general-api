@@ -1,22 +1,34 @@
 import { getCourses } from "@/app/services/postgreService";
+import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET(
+    request: NextRequest
+) {
     try {
+        const user = await verifyFirebaseAuth(request);
+        if (!user) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
         const { searchParams } = new URL(request.url);
-        const subject = searchParams.get("subject") ?? undefined;
         const title = searchParams.get("title") ?? undefined;
 
-        const courses = await getCourses(subject, title);
-        return new Response(
-            JSON.stringify(courses),
-            { status: 200, headers: { "Content-Type": "application/json" } }
+        const courses = await getCourses(title);
+
+        return NextResponse.json(
+            courses,
+            { status: 200 }
         );
 
     } catch (error) {
         console.error("Failed to fetch courses:", error);
-        return new Response(
-            JSON.stringify({ error: "Failed to fetch courses" }),
-            { status: 500, headers: { "Content-Type": "application/json" } }
+        return NextResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
         );
     }
 }

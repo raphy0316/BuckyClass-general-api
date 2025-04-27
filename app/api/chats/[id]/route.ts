@@ -1,32 +1,53 @@
 import { db } from "@/app/lib/firebaseAdmin";
-import { saveVerifiedUser, deleteChatRoomById, deleteUserProfile } from "@/app/services/postgreService";
+import { saveVerifiedUser, deleteChatRoomById } from "@/app/services/postgreService";
+import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAdmin } from "@/app/lib/verifyAdmin"
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
-        const chat_id = (await params).id
+        const { id: chatId } = await params;
 
-        if (!chat_id) {
-            return new Response(
-                JSON.stringify({ error: "Missing id" }),
-                { status: 400, headers: { "Content-Type": "application/json" } }
+        if (!chatId) {
+            return NextResponse.json(
+                { error: "Missing id" },
+                { status: 400 }
             );
         }
 
-        const chatRef = db.ref(`chats/${chat_id}`);
+        const user = await verifyFirebaseAuth(request);
+        if (!user) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        const chatRef = db.ref(`chats/${chatId}`);
         const snapshot = await chatRef.get();
 
         if (!snapshot.exists()) {
-            return new Response(
-                JSON.stringify({ error: "Chat room not found" }),
-                { status: 404, headers: { "Content-Type": "application/json" } }
+            return NextResponse.json(
+                { error: "Chat room not found" },
+                { status: 404 }
             );
         }
 
         const chatData = snapshot.val();
 
+        if(chatData.type === "course"){
+            const adminCheck = await verifyAdmin(user.uid);
+            if (!adminCheck.ok) {
+                return adminCheck.response;
+            }
+        }
+
         if (chatData.type === "course" && chatData.participants) {
             const verifiedUsers = Object.keys(chatData.participants).map((uid) => ({
-                course_id: chat_id,
+                course_id: chatId,
                 user_id: uid,
             }));
 
@@ -34,46 +55,18 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         }
 
         await chatRef.remove();
+        await deleteChatRoomById(chatId);
 
-        await deleteChatRoomById(chat_id);
-
-        return new Response(
-            JSON.stringify({ success: true, message: "Chat room deleted" }),
-            { status: 200, headers: { "Content-Type": "application/json" } }
+        return NextResponse.json(
+            { success: true, message: "Chat room deleted" },
+            { status: 200 }
         );
-    } catch (err) {
-        console.error("Failed to delete chat room:", err);
-        return new Response(
-            JSON.stringify({ error: "Internal server error" }),
-            { status: 500, headers: { "Content-Type": "application/json" } }
+
+    } catch (error) {
+        console.error("Failed to delete chat room:", error);
+        return NextResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
         );
-    }
-
-    export async function DELETE(request: Request) {
-        try {
-            const body = await request.json();
-            const { firebase_uid } = body;
-
-            if (!firebase_uid) {
-                return new Response(JSON.stringify({ error: "Missing firebase_uid" }), {
-                    status: 400,
-                    headers: { "Content-Type": "application/json" },
-                });
-            }
-
-            await deleteUserProfile(firebase_uid);
-
-            return new Response(JSON.stringify({ success: true }), {
-                status: 200,
-                headers: { "Content-Type": "application/json" },
-            });
-        } catch (err) {
-            console.error("Error deleting user profile:", err);
-            return new Response(JSON.stringify({ error: "Internal server error" }), {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            });
-        }
     }
 }
-

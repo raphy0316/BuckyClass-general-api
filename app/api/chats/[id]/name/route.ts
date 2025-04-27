@@ -1,13 +1,31 @@
 import { pool } from "@/app/config/db";
+import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
+import { verifyAdmin } from "@/app/lib/verifyAdmin"
+import { NextRequest, NextResponse } from "next/server";
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+
+    const user = await verifyFirebaseAuth(request);
+
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const client = await pool.connect();
     try {
-        const { id: chatId } = params;
+        const { id: chatId } = await params;
         const { name } = await request.json();
 
         if (!name) {
-            return new Response(JSON.stringify({ error: "Missing name" }), { status: 400 });
+            return NextResponse.json({ error: "Missing name"}, { status: 404 });
+        }
+
+        const adminCheck = await verifyAdmin(user.uid);
+        if (!adminCheck.ok) {
+            return adminCheck.response;
         }
 
         await client.query(

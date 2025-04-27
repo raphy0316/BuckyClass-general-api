@@ -9,4 +9,4 @@ if (!admin.apps.length) {
 }
 
 export const db = admin.database();
-export { admin };
+export const auth = admin.auth();

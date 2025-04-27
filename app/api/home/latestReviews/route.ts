@@ -1,13 +1,31 @@
 import { getLatestReviewsWithCourse } from "@/app/services/postgreService";
+import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(
+    request: NextRequest
+) {
     try {
+        const user = await verifyFirebaseAuth(request);
+        if (!user) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
         const reviews = await getLatestReviewsWithCourse();
-        return Response.json(reviews, { status: 200 });
+
+        return NextResponse.json(
+            reviews,
+            { status: 200 }
+        );
+
     } catch (error) {
         console.error("Error fetching latest reviews:", error);
-        return Response.json({ error: "Failed to fetch latest reviews" }, { status: 500 });
+        return NextResponse.json(
+            { error: "Internal Server Error" },
+            { status: 500 }
+        );
     }
-    
 }
-
