@@ -1,6 +1,8 @@
 import { saveUserProfile, updateUserProfile } from "@/app/services/postgreService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
+import { PostgresError } from "@/app/types/types";
+import { updateUserDisplayName } from "@/app/services/firebaseService"
 
 export async function POST(
     request: NextRequest
@@ -14,9 +16,9 @@ export async function POST(
             );
         }
 
-        const { firebase_uid, name, email, profile_picture } = await request.json();
+        const { id, name, email, majors, profile_picture } = await request.json();
 
-        if (!firebase_uid || !name || !email) {
+        if (!id || !name || !email) {
             return NextResponse.json(
                 { error: "Missing required fields" },
                 { status: 400 }
@@ -24,11 +26,14 @@ export async function POST(
         }
 
         await saveUserProfile({
-            firebase_uid,
+            id,
             name,
             email,
+            majors,
             profile_picture
         });
+
+        await updateUserDisplayName(id, name);
 
         return NextResponse.json(
             { success: true },
@@ -36,13 +41,21 @@ export async function POST(
         );
 
     } catch (error) {
-        console.error("Error saving user profile:", error);
+        const dbError = error as PostgresError;
+        if (dbError.code === '23505') {
+            return NextResponse.json(
+                { error: "Duplicate ID: User already exists" },
+                { status: 409 }
+            );
+        }
+
         return NextResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
         );
     }
 }
+
 
 export async function PATCH(
     request: NextRequest
@@ -56,18 +69,19 @@ export async function PATCH(
             );
         }
 
-        const { firebase_uid, name, profile_picture } = await request.json();
+        const { id, name, majors, profile_picture } = await request.json();
 
-        if (!firebase_uid) {
+        if (!id) {
             return NextResponse.json(
-                { error: "Missing firebase_uid" },
+                { error: "Missing id" },
                 { status: 400 }
             );
         }
 
         await updateUserProfile({
-            firebase_uid,
+            id,
             name,
+            majors,
             profile_picture
         });
 

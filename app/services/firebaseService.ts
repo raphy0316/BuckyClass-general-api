@@ -1,4 +1,5 @@
 import axios from "axios";
+import { auth } from "@/app/lib/firebaseAdmin"
 
 export const fetchRecentChatMessageCounts = async (): Promise<Record<string, { messageCount: number, createdBy: string, type: string }>> => {
   const response = await axios.get("https://grow-madison-default-rtdb.firebaseio.com/chats.json");
@@ -35,3 +36,10 @@ export const fetchRecentChatMessageCounts = async (): Promise<Record<string, { m
 
   return chatMessageCounts;
 };
+
+export async function updateUserDisplayName(id: string, newDisplayName: string) {
+    await auth.updateUser(id, {
+        displayName: newDisplayName,
+    });
+}
+

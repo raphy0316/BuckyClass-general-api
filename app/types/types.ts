@@ -74,11 +74,14 @@ export interface VerifiedUser {
 }
 
 export type UserProfile = {
-    firebase_uid: string;
+    id: string;
     name: string;
     email: string;
+    majors: string[];
     profile_picture?: string;
 };
+
+export type PostgresError = Error & { code?: string };
 
 export interface TopAGradeCourse {
     course_id: string;

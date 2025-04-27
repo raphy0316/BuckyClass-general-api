@@ -1,19 +1,13 @@
 import { isNewUser } from "@/app/services/postgreService";
-import { NextRequest, NextResponse } from "next/server";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(
-    request: NextRequest
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { firebase_uid } = await request.json();
-
-        if (!firebase_uid) {
-            return NextResponse.json(
-                { error: "Missing firebase_uid" },
-                { status: 400 }
-            );
-        }
+        const id = (await params).id;
 
         const user = await verifyFirebaseAuth(request);
         if (!user) {
@@ -23,7 +17,7 @@ export async function POST(
             );
         }
 
-        const is_new = await isNewUser(firebase_uid);
+        const is_new = await isNewUser(id);
 
         if (is_new === null) {
             return NextResponse.json(
