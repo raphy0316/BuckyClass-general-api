@@ -1,8 +1,8 @@
-import { saveUserProfile, updateUserProfile } from "@/app/services/postgreService";
+import { saveUserProfile, updateUserProfile } from "@/app/services/postgreService/users/userService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 import { PostgresError } from "@/app/types/types";
-import { updateUserDisplayName } from "@/app/services/firebaseService"
+import { updateUserDisplayName } from "@/app/services/firebaseService/firebaseService"
 
 export async function POST(
     request: NextRequest

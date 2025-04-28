@@ -1,5 +1,5 @@
 import {fetchCourses, fetchGrade} from "@/app/services/madgradesService";
-import {saveCourses, saveGrades} from "@/app/services/postgreService";
+import {saveCourses, saveGrades} from "@/app/services/postgreService/courses/courseService";
 
 export async function POST(){
     try {
@@ -8,7 +8,7 @@ export async function POST(){
         if (!courses || courses.length === 0) {
             return Response.json(
                 { error: "No courses found from MadGrades API" },
-                { status: 404}
+                { status: 404 }
             );
         }
 
@@ -26,6 +26,7 @@ export async function POST(){
         });
 
         await Promise.all(gradePromises);
+
         console.log("Grades updated successfully");
         return Response.json(
             { message: "Courses and grades updated successfully" },

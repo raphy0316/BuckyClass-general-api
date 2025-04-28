@@ -1,4 +1,4 @@
-import { saveVerifiedUser } from "@/app/services/postgreService";
+import { saveVerifiedUser } from "@/app/services/postgreService/users/userService";
 
 //Verify User
 export async function POST(request : Request){

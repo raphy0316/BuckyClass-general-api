@@ -1,4 +1,4 @@
-import { getAverageRatingByCourse } from "@/app/services/postgreService";
+import { getAverageRatingByCourse } from "@/app/services/postgreService/home/homeService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 

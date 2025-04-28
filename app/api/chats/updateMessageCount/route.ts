@@ -1,5 +1,5 @@
-import { fetchRecentChatMessageCounts } from "@/app/services/firebaseService";
-import { saveChatRoomMessageCounts } from "@/app/services/postgreService";
+import { fetchRecentChatMessageCounts } from "@/app/services/firebaseService/firebaseService";
+import { saveChatRoomMessageCounts } from "@/app/services/postgreService/chats/chatService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 

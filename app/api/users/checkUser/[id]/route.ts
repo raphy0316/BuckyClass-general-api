@@ -1,4 +1,4 @@
-import { isNewUser } from "@/app/services/postgreService";
+import { isNewUser } from "@/app/services/postgreService/users/userService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 

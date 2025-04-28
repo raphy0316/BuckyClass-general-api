@@ -1,4 +1,4 @@
-import { updateLikeReview } from "@/app/services/postgreService";
+import { updateLikeReview } from "@/app/services/postgreService/reviews/reviewService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 

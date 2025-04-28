@@ -1,4 +1,4 @@
-import { deleteReview, saveReview } from "@/app/services/postgreService";
+import { deleteReview, saveReview } from "@/app/services/postgreService/reviews/reviewService";
 import { Review } from "@/app/types/types";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
