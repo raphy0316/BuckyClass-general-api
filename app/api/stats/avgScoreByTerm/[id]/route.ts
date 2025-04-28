@@ -1,4 +1,4 @@
-import { getAverageScoreByTermForCourse } from "@/app/services/postgreService";
+import { getAverageScoreByTermForCourse } from "@/app/services/postgreService/home/homeService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 

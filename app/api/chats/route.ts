@@ -1,5 +1,5 @@
 import { db } from "@/app/lib/firebaseAdmin";
-import { insertChatRoom } from "@/app/services/postgreService";
+import { insertChatRoom } from "@/app/services/postgreService/chats/chatService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { verifyAdmin } from "@/app/lib/verifyAdmin";
 import { NextRequest, NextResponse } from "next/server";

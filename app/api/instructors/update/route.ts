@@ -1,4 +1,4 @@
-import { saveInstructors } from "@/app/services/postgreService";
+import { saveInstructors } from "@/app/services/postgreService/courses/courseService";
 import { fetchInstructors } from "@/app/services/madgradesService";
 
 export async function POST() {

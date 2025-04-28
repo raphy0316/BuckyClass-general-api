@@ -1,4 +1,4 @@
-import { getCourses } from "@/app/services/postgreService";
+import { getCourses } from "@/app/services/postgreService/courses/courseService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 

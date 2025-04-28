@@ -1,4 +1,4 @@
-import { getUserProfile, deleteUserProfile } from "@/app/services/postgreService";
+import { getUserProfile, deleteUserProfile } from "@/app/services/postgreService/users/userService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 

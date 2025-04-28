@@ -1,5 +1,6 @@
 import { db } from "@/app/lib/firebaseAdmin";
-import { saveVerifiedUser, deleteChatRoomById } from "@/app/services/postgreService";
+import { saveVerifiedUser } from "@/app/services/postgreService/users/userService";
+import { deleteChatRoomById } from "@/app/services/postgreService/chats/chatService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/app/lib/verifyAdmin"
