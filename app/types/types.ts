@@ -1,7 +1,8 @@
 export interface Course {
     id: string;
     name: string;
-    displayName: string;
+    subject_abbreviation: string;
+    number: number;
 }
 
 export interface Grade {
@@ -40,7 +41,7 @@ export interface CourseOffering {
 export interface InstructorCourseOffering {
     instructor_id: string;
     offering_id: string;
-  }
+}
 
 export interface SectionGrade {
     section_id: string;
@@ -62,12 +63,12 @@ export interface Section {
     id: string;
     number: number;
     sectionType: string; 
-  }
+}
   
   export interface CourseOfferingSection {
     offering_id: string;
     section_id: string;
-  }
+}
 export interface VerifiedUser {
     course_id: string;
     user_id: string;
@@ -95,7 +96,7 @@ export interface ReviewWithCourse {
     rating: number;         
     comment: string;
     created_at: string;  
-  }
+}
 
   export interface TopViewedCourse {
     id: string;
@@ -105,11 +106,15 @@ export interface ReviewWithCourse {
 
 export interface AverageRatingResult {
     average_rating: number | null;
-  }
-
-export type ChatMessageCounts = Record<string, { 
-    messageCount: number; 
+}
+  export interface DailyMessageCounts {
+    [date: string]: number;
+}
+    
+export interface ChatMessageCounts {
+    [chatId: string]: {
+    dailyCounts: DailyMessageCounts;
     createdBy: string; 
     type: string; 
-}>;
-
+    };
+}

@@ -6,19 +6,21 @@ export const saveCourses = async (courses: Course[]): Promise<void> => {
 
     try {
         const query = `
-            INSERT INTO courses (id, name, display_name)
-            VALUES ($1, $2, $3)
+            INSERT INTO courses (id, name, subject_abbreviation, number)
+            VALUES ($1, $2, $3, $4)
             ON CONFLICT (id)
             DO UPDATE SET
                 name = EXCLUDED.name,
-                display_name = EXCLUDED.display_name;
+                subject_abbreviation = EXCLUDED.subject_abbreviation,
+                number = EXCLUDED.number;
         `;
 
         for (const course of courses) {
             await client.query(query, [
                 course.id,
                 course.name,
-                course.displayName
+                course.subject_abbreviation,
+                course.number
             ]);
         }
 
@@ -27,6 +29,7 @@ export const saveCourses = async (courses: Course[]): Promise<void> => {
         client.release();
     }
 };
+
 
 export const saveGrades = async (grades: Grade): Promise<void> => {
     const client = await pool.connect();
