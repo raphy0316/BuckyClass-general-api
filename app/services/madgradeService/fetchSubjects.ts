@@ -1,24 +1,45 @@
-import axios, { AxiosResponse } from "axios";
-import { Subject, MadgradesSubjectResponse } from "@/app/types/types"
+import { delay } from "@/app/utils/delay";
+import { ENV } from "@/app/config/env";
+import { Subject } from "@/app/types/types";
+import axiosInstance from "@/app/lib/axiosInstance";
 
+interface MadgradesSubjectResponse {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    nextPageUrl?: string;
+    results: {
+        code: string;
+        name: string;
+        abbreviation: string;
+        coursesUrl: string;
+    }[];
+}
 
 export async function fetchSubjects(): Promise<Subject[]> {
-    let subjects: Subject[] = [];
-    let url: string | null = "https://api.madgrades.com/v1/subjects?page=1";
+    const subjects: Subject[] = [];
+    let url: string | null = `${ENV.MADGRADES_API_BASE_URL}/subjects`;
 
     while (url) {
-        const response: AxiosResponse<MadgradesSubjectResponse> = await axios.get(url);
-        const data = response.data;
+        try{
+            await delay(300);
+            const { data }: { data: MadgradesSubjectResponse } = await axiosInstance.get(url, {
+                headers: { Authorization: `Token token=${ENV.API_TOKEN}` }
+            });
 
-        const pageSubjects: Subject[] = data.results.map((subject) => ({
-            code: subject.code,
-            name: subject.name,
-            abbreviation: subject.abbreviation
-        }));
+            const pageSubjects: Subject[] = data.results.map((subject) => ({
+                code: subject.code,
+                name: subject.name,
+                abbreviation: subject.abbreviation
+            }));
 
-        subjects = subjects.concat(pageSubjects);
+            subjects.push(...pageSubjects);
 
-        url = data.nextPageUrl ?? null;
+            url = data.nextPageUrl ?? null;
+
+        } catch(error){
+            console.log("Error: ", error)
+        }
     }
 
     return subjects;
