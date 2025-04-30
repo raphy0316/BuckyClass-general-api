@@ -102,7 +102,7 @@ export const isNewUser = async (id: string): Promise<boolean | null> => {
         );
 
         if (result.rowCount === 0) {
-            return null; // 유저 없음
+            return null;
         }
 
         return result.rows[0].is_new_user;
@@ -174,3 +174,15 @@ export const updateUserProfile = async (profile: Partial<UserProfile> & { id: st
         client.release();
     }
 };
+
+export const markUserAsOld = async (id: string): Promise<void> => {
+    const client = await pool.connect();
+    try {
+        await client.query(
+            `UPDATE users SET is_new_user = false WHERE id = $1 AND is_new_user = true`, 
+            [id]);
+    } finally {
+      client.release();
+    }
+};
+  

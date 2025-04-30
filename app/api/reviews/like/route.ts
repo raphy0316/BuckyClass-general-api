@@ -14,16 +14,17 @@ export async function POST(
             );
         }
 
-        const { course_id, user_id, cancel } = await request.json();
+        const { course_id, user_id } = await request.json();
+        const liked_by_user_id = user.id;
 
-        if (!course_id || !user_id || cancel === undefined) {
+        if (!course_id || !user_id) {
             return NextResponse.json(
                 { error: "Missing required fields" },
                 { status: 400 }
             );
         }
-
-        await updateLikeReview(course_id, user_id, cancel);
+        
+        await updateLikeReview(course_id, user_id, liked_by_user_id);
 
         return NextResponse.json(
             { message: "Like updated successfully" },

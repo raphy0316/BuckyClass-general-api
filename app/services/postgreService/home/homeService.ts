@@ -30,12 +30,13 @@ export const getLatestReviewsWithCourse = async (): Promise<ReviewWithCourse[]> 
     const result = await client.query(`
       SELECT
         r.user_id,
-        c.subject_abbreviation || ' ' || c.number AS course_name,
+        cs.subject_abbreviation || ' ' || c.number AS course_name,
         c.name,
         r.rating,
         r.comment
       FROM reviews r
-      JOIN courses c ON r.course_id = c.id
+      JOIN "CoursesSubjects" cs ON r.course_id = cs.course_id
+      JOIN "courses" c ON r.course_id = c.id
       ORDER BY r.created_at DESC
       LIMIT 10
     `);
@@ -52,12 +53,13 @@ export const getTopViewedCourses = async (): Promise<TopViewedCourse[]> => {
     const result = await client.query(`
       SELECT
         id,
-        subject_abbreviation || ' ' || number AS display_name,
+        cs.subject_abbreviation || ' ' || number AS display_name,
         name,
         views
-      FROM courses
+      FROM courses c
+      JOIN "CoursesSubjects" cs ON c.id = cs.course_id
       ORDER BY views DESC
-      LIMIT 10;
+      LIMIT 10
     `);
     return result.rows;
   } catch (error) {
@@ -174,13 +176,13 @@ export const getTop3Chats = async (): Promise<{ name: string; message_count: num
     const query = `
       WITH top_chats AS (
         SELECT
-          cr.id,
-          c.subject_abbreviation || ' ' || c.number AS display_name,
+          cr.chat_id,
+          cs.subject_abbreviation || ' ' || c.number AS display_name,
           cr.message_count
         FROM "chatRoom" cr
-        JOIN "courses" c ON cr.id = c.id
-        WHERE cr.type = 'course'
-        ORDER BY cr.message_count DESC
+        JOIN "courses" c ON cr.chat_id = c.id::text
+        JOIN "CoursesSubjects" cs ON cr.chat_id = cs.course_id::text
+       	ORDER BY cr.message_count DESC
         LIMIT 3
       )
       SELECT
@@ -189,8 +191,8 @@ export const getTop3Chats = async (): Promise<{ name: string; message_count: num
         mc.date,
         mc.message_count AS count
       FROM top_chats tc
-      LEFT JOIN "chatRoomDailyMessageCount" mc ON tc.id = mc.chat_id
-      ORDER BY tc.message_count DESC, mc.date ASC;
+      LEFT JOIN "chatRoomDailyMessageCount" mc ON tc.chat_id = mc.chat_id
+      ORDER BY tc.message_count DESC, mc.date ASC
     `;
     const result = await client.query(query);
     return result.rows;
