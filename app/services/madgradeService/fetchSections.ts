@@ -35,7 +35,7 @@ export async function fetchSections(courseOfferings : CourseOffering[]): Promise
     const instructorSections: InstructorSection[] = [];
     for (const courseOffering of courseOfferings) {
         try{
-            await delay(300);
+            await delay(250);
             url = `${ENV.MADGRADES_API_BASE_URL}/course_offerings/${courseOffering.id}`;
             const { data }: { data: MadgradesCourseOfferingDetailResponse } = await axiosInstance.get(url, {
                 headers: { Authorization: `Token token=${ENV.API_TOKEN}` }
@@ -43,7 +43,7 @@ export async function fetchSections(courseOfferings : CourseOffering[]): Promise
             let url_section: string | null 
             for (const section of data.sections){
                 try{
-                    await delay(300);
+                    await delay(250);
                     url_section = `${ENV.MADGRADES_API_BASE_URL}/sections/${section.uuid}`;
                     const { data }: { data: MadgradesSectionResponse } = await axiosInstance.get(url_section, {
                         headers: { Authorization: `Token token=${ENV.API_TOKEN}` }

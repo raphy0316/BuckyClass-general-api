@@ -11,7 +11,7 @@ export async function fetchGrades(courses: Course[]): Promise<{ grades: Grade[];
 
     for (const course of courses) {
         try{
-            await delay(300);
+            await delay(250);
             const url = `${ENV.MADGRADES_API_BASE_URL}/courses/${course.id}/grades`;
 
             const { data }: { data: MadgradesGradeResponse } = await axiosInstance.get(url, {

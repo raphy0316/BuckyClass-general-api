@@ -26,7 +26,7 @@ export async function fetchCourses(): Promise<{ courses: Course[]; courseSubject
 
     while (url) {
         try{
-            await delay(300);
+            await delay(250);
             const { data }: { data: MadgradesCourseResponse } = await axiosInstance.get(url, {
                 headers: { Authorization: `Token token=${ENV.API_TOKEN}` }
             });
