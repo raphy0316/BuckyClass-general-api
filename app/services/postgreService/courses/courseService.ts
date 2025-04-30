@@ -9,10 +9,16 @@ export const getSectionsByCourseId = async (courseId: string): Promise<Section[]
         const currentSemester = "Spring 2025";
 
         const query = `
-            SELECT s.*
+            SELECT 
+            s.id,
+            s.number,
+            s.section_type,
+            s.courseOffering_id,
+            (s.days || ' ' || TO_CHAR(s.start_time, 'HH24:MI') || ' - ' || TO_CHAR(s.end_time, 'HH24:MI')) AS meeting_time
             FROM "sections" s
             JOIN "courseOffering" co ON s.courseOffering_id = co.id
             WHERE co.course_id = $1 AND co.semester = $2
+
         `;
 
         const result = await client.query(query, [courseId, currentSemester]);
