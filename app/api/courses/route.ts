@@ -16,8 +16,9 @@ export async function GET(
 
         const { searchParams } = new URL(request.url);
         const title = searchParams.get("title") ?? undefined;
+        const courseCode = searchParams.get("course_code") ?? undefined;
 
-        const courses = await getCourses(title);
+        const courses = await getCourses(title, courseCode);
 
         return NextResponse.json(
             courses,
