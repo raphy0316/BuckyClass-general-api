@@ -307,43 +307,40 @@ export async function saveInstructors(instructors: Instructor[]): Promise<void> 
 
 
 export const getCourses = async (
-    courseCode?: string,
-    title?: string
-): Promise<Course[]> => {
+    keyword?: string
+  ): Promise<Course[]> => {
     const client = await pool.connect();
-
+  
     try {
-        let query = `
-            SELECT 
-                c.*,
-                cs.subject_abbreviation
-            FROM "courses" c
-            LEFT JOIN "CoursesSubjects" cs ON c.id = cs.course_id
-            LEFT JOIN "subjects" s ON cs.subject_abbreviation = s.abbreviation
-            WHERE 1=1
-        `;
-
-        const queryParams: string[] = [];
-
-        if (courseCode) {
-            query += ` AND (s.abbreviation || ' ' || c.number) ILIKE '%' || $${queryParams.length + 1} || '%'`;
-            queryParams.push(courseCode);
-        }
-
-        if (title) {
-            query += ` AND c.name ILIKE '%' || $${queryParams.length + 1} || '%'`;
-            queryParams.push(title);
-        }
-
-        const result = await client.query(query, queryParams);
-        return result.rows;
+      let query = `
+        SELECT 
+          c.*,
+          cs.subject_abbreviation
+        FROM "courses" c
+        LEFT JOIN "CoursesSubjects" cs ON c.id = cs.course_id
+        WHERE 1=1
+      `;
+  
+      const queryParams: string[] = [];
+  
+      if (keyword) {
+        query += ` AND (
+          (cs.subject_abbreviation || ' ' || c.number) ILIKE '%' || $1 || '%' OR
+          c.name ILIKE '%' || $1 || '%'
+        )`;
+        queryParams.push(keyword);
+      }
+  
+      const result = await client.query(query, queryParams);
+      return result.rows;
     } catch (err) {
-        console.error("Error in getCourses:", err);
-        return [];
+      console.error("Error in getCourses:", err);
+      return [];
     } finally {
-        client.release();
+      client.release();
     }
-};
+  };
+  
 
 
 
