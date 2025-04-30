@@ -3,9 +3,9 @@ import { verifyAdmin } from "@/app/lib/verifyAdmin";
 //import { fetchSubjects } from "@/app/services/madgradeService/fetchSubjects";
 //import { fetchInstructors } from "@/app/services/madgradeService/fetchInstructors"
 import { fetchCourseOfferings } from "@/app/services/madgradeService/fetchCourseOfferings"
-//import { fetchSections } from "@/app/services/madgradeService/fetchSections"
+import { fetchSections } from "@/app/services/madgradeService/fetchSections"
 import { fetchGrades } from "@/app/services/madgradeService/fetchGrades"
-import { /*saveSubjects, saveInstructors, saveCourses,*/ saveGrades,/* saveSections, clearCourseDataInDB,*/ saveCourseOfferings, /*saveSectionGrades*/ } from "@/app/services/postgreService/courses/courseService";
+import { /*saveSubjects, saveInstructors, saveCourses,*/ saveGrades, saveSections, /*clearCourseDataInDB,*/ saveCourseOfferings, saveSectionGrades } from "@/app/services/postgreService/courses/courseService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { fetchCourses } from "@/app/services/madgradeService/fetchCourses";
 
@@ -43,16 +43,16 @@ export async function POST(request: NextRequest) {
         await saveCourseOfferings(courseOfferings);
         console.log("CourseOfferings updated.");
 
-        /*const { sections, instructorSections } = await fetchSections(courseOfferings);
+        const { sections, instructorSections } = await fetchSections(courseOfferings);
         await saveSections(sections, instructorSections);
         console.log("Sections updated.");
         courseOfferings.length = 0;
         sections.length = 0;
-        instructorSections.length = 0;*/
+        instructorSections.length = 0;
 
         const { grades, sectionGrades } = await fetchGrades(courses);
         await saveGrades(grades);
-        //await saveSectionGrades(sectionGrades);
+        await saveSectionGrades(sectionGrades);
         console.log("Grades updated.");
         courses.length = 0;
         sectionGrades.length = 0;
