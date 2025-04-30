@@ -1,21 +1,23 @@
 export function convertTermCode(termCode: number): string {
-    const year = Math.floor(termCode / 10);
-    const term = termCode % 10;
+    const termDigit = termCode % 10;
+    const baseCode = termCode - termDigit;
 
     let termName: string;
-    switch (term) {
+    switch (termDigit) {
         case 2:
-            termName = "Spring";
+            termName = "Fall";
             break;
         case 4:
-            termName = "Summer";
+            termName = "Spring";
             break;
         case 6:
-            termName = "Fall";
+            termName = "Summer";
             break;
         default:
             termName = "Unknown Term";
     }
+
+    const year = 2000 + Math.floor((baseCode - 1000) / 10);
 
     return `${termName} ${year}`;
 }

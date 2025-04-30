@@ -3,6 +3,28 @@ import { Course, Grade, Instructor, Review, Subject, CourseSubject, Section, Sec
 
 //DB Update
 
+export async function getCoursesByMajor(major: string) {
+    const client = await pool.connect();
+    try {
+        const query = `
+            SELECT DISTINCT
+                c.id,
+                cs.subject_abbreviation || ' ' || c.number AS code,
+                c.title,
+                c.credits
+            FROM "MajorsSubjects" ms
+            JOIN "CoursesSubjects" cs ON ms.subject_abbreviation = cs.subject_abbreviation
+            JOIN "Courses" c ON cs.course_id = c.id
+            WHERE ms.major = $1
+        `;
+        const result = await client.query(query, [major.toUpperCase()]);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+
 export async function clearCourseDataInDB(): Promise<void> {
     const client = await pool.connect();
     try {
@@ -242,23 +264,28 @@ export async function saveInstructors(instructors: Instructor[]): Promise<void> 
 }
 
 
-export const getCourses = async (subject?: string, title?: string): Promise<Course[]> => {
+export const getCourses = async (
+    courseCode?: string,
+    title?: string
+): Promise<Course[]> => {
     const client = await pool.connect();
 
     try {
         let query = `
-            SELECT c.*
+            SELECT 
+                c.*,
+                cs.subject_abbreviation
             FROM "courses" c
             LEFT JOIN "CoursesSubjects" cs ON c.id = cs.course_id
-            LEFT JOIN "subjects" s ON cs.subject_id = s.id
+            LEFT JOIN "subjects" s ON cs.subject_abbreviation = s.abbreviation
             WHERE 1=1
         `;
 
-        const queryParams: (string)[] = [];
+        const queryParams: string[] = [];
 
-        if (subject) {
-            query += ` AND s.name ILIKE '%' || $${queryParams.length + 1} || '%'`;
-            queryParams.push(subject);
+        if (courseCode) {
+            query += ` AND (s.abbreviation || ' ' || c.number) ILIKE '%' || $${queryParams.length + 1} || '%'`;
+            queryParams.push(courseCode);
         }
 
         if (title) {
@@ -268,10 +295,15 @@ export const getCourses = async (subject?: string, title?: string): Promise<Cour
 
         const result = await client.query(query, queryParams);
         return result.rows;
+    } catch (err) {
+        console.error("Error in getCourses:", err);
+        return [];
     } finally {
         client.release();
     }
 };
+
+
 
 
 export const getCourseById = async (id: string): Promise<{ course: Course, grade?: Grade, reviews?: Review[] } | null> => {
