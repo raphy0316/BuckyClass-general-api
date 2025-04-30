@@ -4,7 +4,7 @@ import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { section_id: string } }
+  { params }: { params: Promise<{ section_id: string }> }
 ) {
   const client = await pool.connect();
 
@@ -14,14 +14,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const sectionId = params.section_id;
-    if (!sectionId) {
+    const { section_id } = await params;
+    if (!section_id) {
       return NextResponse.json({ error: "Missing section_id" }, { status: 400 });
     }
 
     await client.query(
       `DELETE FROM "EnrolledSections" WHERE user_id = $1 AND section_id = $2`,
-      [user.uid, sectionId]
+      [user.uid, section_id]
     );
 
     return NextResponse.json({ success: true }, { status: 200 });
