@@ -19,7 +19,7 @@ export async function fetchInstructors(): Promise<Instructor[]> {
     
     while (url) {
         try{
-            await delay(250);
+            
             const { data }: { data: MadgradesInstructorResponse } = await axiosInstance.get(url, {
                 headers: { Authorization: `Token token=${ENV.API_TOKEN}` }
             });
@@ -32,8 +32,10 @@ export async function fetchInstructors(): Promise<Instructor[]> {
             instructors.push(...pageInstructors);
 
             url = data.nextPageUrl;
+            await delay(150);
         } catch(error){
             console.log(error);
+            delay(1000);
         }
         
     }

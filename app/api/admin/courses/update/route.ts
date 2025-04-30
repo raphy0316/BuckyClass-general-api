@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/app/lib/verifyAdmin";
-//import { fetchSubjects } from "@/app/services/madgradeService/fetchSubjects";
-//import { fetchInstructors } from "@/app/services/madgradeService/fetchInstructors"
+import { fetchSubjects } from "@/app/services/madgradeService/fetchSubjects";
+import { fetchInstructors } from "@/app/services/madgradeService/fetchInstructors"
 import { fetchCourseOfferings } from "@/app/services/madgradeService/fetchCourseOfferings"
 import { fetchSections } from "@/app/services/madgradeService/fetchSections"
 import { fetchGrades } from "@/app/services/madgradeService/fetchGrades"
-import { /*saveSubjects, saveInstructors, saveCourses,*/ saveGrades, saveSections, /*clearCourseDataInDB,*/ saveCourseOfferings, saveSectionGrades } from "@/app/services/postgreService/courses/courseService";
+import { saveSubjects, saveInstructors, saveCourses, saveGrades, saveSections, /*clearCourseDataInDB,*/ saveCourseOfferings, saveSectionGrades } from "@/app/services/postgreService/courses/courseService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { fetchCourses } from "@/app/services/madgradeService/fetchCourses";
 
@@ -23,42 +23,47 @@ export async function POST(request: NextRequest) {
 
         //await clearCourseDataInDB();
         //console.log("Starting Madgrades Data Update...");
-
-        /*const instructors = await fetchInstructors();
-        await saveInstructors(instructors);
-        console.log("Instructors updated.");
-        instructors.length = 0;
-
-        const subjects = await fetchSubjects();
-        await saveSubjects(subjects);
-        console.log("Subjects updated.");
-        subjects.length = 0;*/
-
-        const { courses, courseSubjects } = await fetchCourses();
-        //await saveCourses(courses, courseSubjects);
-        console.log("Courses updated.");
-        courseSubjects.length = 0;
+        /*
+        {
+            const instructors = await fetchInstructors();
+            console.log("Instructors fetched.");
+            await saveInstructors(instructors);
+            console.log("Instructors updated.");
+        }
         
-        const { courseOfferings } = await fetchCourseOfferings(courses);
-        await saveCourseOfferings(courseOfferings);
-        console.log("CourseOfferings updated.");
+        {
+            const subjects = await fetchSubjects();
+            console.log("Subjects updated.");
+            await saveSubjects(subjects);
+            console.log("Subjects updated.");
+        }
+        */
+        {
+            const { courses, courseSubjects } = await fetchCourses();
+            console.log("Courses fetched.");
+            //await saveCourses(courses, courseSubjects);
+            console.log("Courses updated.");
+            
+            {
+                const { courseOfferings } = await fetchCourseOfferings(courses);
+                console.log("CourseOfferings fetched.");
+                //await saveCourseOfferings(courseOfferings);
+                console.log("CourseOfferings updated.");
 
-        const { sections, instructorSections } = await fetchSections(courseOfferings);
-        await saveSections(sections, instructorSections);
-        console.log("Sections updated.");
-        courseOfferings.length = 0;
-        sections.length = 0;
-        instructorSections.length = 0;
+                const { sections, instructorSections } = await fetchSections(courseOfferings);
+                console.log("Sections fetched.");
+                await saveSections(sections, instructorSections);
+                console.log("Sections updated.");
+            }
+            
 
-        const { grades, sectionGrades } = await fetchGrades(courses);
-        await saveGrades(grades);
-        await saveSectionGrades(sectionGrades);
-        console.log("Grades updated.");
-        courses.length = 0;
-        sectionGrades.length = 0;
-        grades.length = 0;
+            const { grades, sectionGrades } = await fetchGrades(courses);
+            await saveGrades(grades);
+            console.log("Grades fetched.");
+            await saveSectionGrades(sectionGrades);
+            console.log("Grades updated.");
+        }
         
-
         console.log("Update Complete.");
         return NextResponse.json({ message: "Madgrades data update complete!" }, { status: 200 });
 

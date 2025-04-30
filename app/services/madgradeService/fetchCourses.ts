@@ -26,7 +26,6 @@ export async function fetchCourses(): Promise<{ courses: Course[]; courseSubject
 
     while (url) {
         try{
-            await delay(250);
             const { data }: { data: MadgradesCourseResponse } = await axiosInstance.get(url, {
                 headers: { Authorization: `Token token=${ENV.API_TOKEN}` }
             });
@@ -47,9 +46,11 @@ export async function fetchCourses(): Promise<{ courses: Course[]; courseSubject
             }
 
             url = data.nextPageUrl;
+
+            await delay(150);
         } catch( error ){
-            console.log("Errror: ", error);
-            continue;
+            console.warn(`Error fetching courses from: ${url}`, error);
+            await delay(1000);
         }
         
     }
