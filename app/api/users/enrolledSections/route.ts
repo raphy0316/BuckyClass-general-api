@@ -43,12 +43,24 @@ export async function GET(request: NextRequest) {
       }
   
       const query = `
-        SELECT s.*, co.semester, c.name AS course_name, c.number AS course_number, cs.subject_abbreviation
+        SELECT 
+            s.id AS section_id,
+            s.number AS section_number,
+            s.roomCode AS location_code,
+            (s.days || ' ' || TO_CHAR(s.start_time, 'HH12:MIAM') || ' - ' || TO_CHAR(s.end_time, 'HH12:MIAM')) AS meeting_time,
+            co.semester,
+            c.name AS course_name,
+            c.number AS course_number,
+            cs.subject_abbreviation,
+            (cs.subject_abbreviation || ' ' || c.number) AS course_code,
+            i.name AS instructor_name
         FROM "EnrolledSections" e
         JOIN "sections" s ON e.section_id = s.id
         JOIN "courseOfferings" co ON s.courseOffering_id = co.id
         JOIN "courses" c ON co.course_id = c.id
         JOIN "CoursesSubjects" cs ON c.id = cs.course_id
+        LEFT JOIN "InstructorsSections" isec ON s.id = isec.section_id
+        LEFT JOIN "instructors" i ON isec.instructor_id = i.id
         WHERE e.user_id = $1
       `;
   

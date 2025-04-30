@@ -1,7 +1,27 @@
 import { pool } from "@/app/config/db";
 import { Course, Grade, Instructor, Review, Subject, CourseSubject, Section, SectionGrade, InstructorSection, CourseOffering } from "@/app/types/types";
-
 //DB Update
+
+export const getSectionsByCourseId = async (courseId: string): Promise<Section[]> => {
+    const client = await pool.connect();
+
+    try {
+        const currentSemester = "Spring 2025";
+
+        const query = `
+            SELECT s.*
+            FROM "sections" s
+            JOIN "courseOffering" co ON s.courseOffering_id = co.id
+            WHERE co.course_id = $1 AND co.semester = $2
+        `;
+
+        const result = await client.query(query, [courseId, currentSemester]);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+};
+
 
 export async function getCoursesByMajor(major: string) {
     const client = await pool.connect();
@@ -9,9 +29,8 @@ export async function getCoursesByMajor(major: string) {
         const query = `
             SELECT DISTINCT
                 c.id,
-                cs.subject_abbreviation || ' ' || c.number AS code,
-                c.title,
-                c.credits
+                c.name,
+                cs.subject_abbreviation || ' ' || c.number AS course_code,
             FROM "MajorsSubjects" ms
             JOIN "CoursesSubjects" cs ON ms.subject_abbreviation = cs.subject_abbreviation
             JOIN "Courses" c ON cs.course_id = c.id
@@ -105,7 +124,8 @@ export async function saveCourseOfferings(courseOfferings: CourseOffering[]): Pr
         const query = `
             INSERT INTO "courseOffering" (id, course_id, semester)
             VALUES ${values}
-            ON CONFLICT (id) DO NOTHING;
+            ON CONFLICT (id) 
+            DO UPDATE SET semester = EXCLUDED.semester;
         `;
 
         await client.query(query);
@@ -120,7 +140,7 @@ export async function saveCourseOfferings(courseOfferings: CourseOffering[]): Pr
 }
 
 
-export async function saveGrades(courseGrades: Grade[], sectionGrades: SectionGrade[] ): Promise<void> {
+export async function saveGrades(courseGrades: Grade[] ): Promise<void> {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -141,6 +161,23 @@ export async function saveGrades(courseGrades: Grade[], sectionGrades: SectionGr
                 other_per = EXCLUDED.other_per;
         `;
 
+        await client.query(courseGradeQuery);
+
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("saveGrades Error:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveSectionGrades(sectionGrades: SectionGrade[] ): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
         const sectionGradeValues = sectionGrades.map((g) => `('${g.section_id}', ${g.total}, ${g.a_per}, ${g.ab_per}, ${g.b_per}, ${g.bc_per}, ${g.c_per}, ${g.d_per}, ${g.f_per}, ${g.other_per})`).join(",");
         const sectionGradeQuery = `
             INSERT INTO section_grades (section_id, total, a_per, ab_per, b_per, bc_per, c_per, d_per, f_per, other_per)
@@ -157,7 +194,6 @@ export async function saveGrades(courseGrades: Grade[], sectionGrades: SectionGr
                 other_per = EXCLUDED.other_per;
         `;
 
-        await client.query(courseGradeQuery);
         await client.query(sectionGradeQuery);
 
         await client.query('COMMIT');

@@ -20,7 +20,7 @@ export async function fetchCourseOfferings(courses : Course[]): Promise<{ course
     const courseOfferings: CourseOffering[] = [];
     for (const course of courses) {
         try{
-            await delay(300);
+            await delay(250);
             url = `${ENV.MADGRADES_API_BASE_URL}/courses/${course.id}`;
 
             const { data }: { data: MadgradesCourseDetailResponse } = await axiosInstance.get(url, {
