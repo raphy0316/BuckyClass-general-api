@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ course_id: string }> }
 ) {
   try {
     const user = await verifyFirebaseAuth(request);
@@ -12,12 +12,12 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: courseId } = await params;
-    if (!courseId) {
+    const { course_id } = await params;
+    if (!course_id) {
       return NextResponse.json({ error: "Missing courseId" }, { status: 400 });
     }
 
-    const sections = await getSectionsByCourseId(courseId);
+    const sections = await getSectionsByCourseId(course_id);
     return NextResponse.json(sections, { status: 200 });
   } catch (error) {
     console.error("Failed to fetch sections by courseId:", error);
