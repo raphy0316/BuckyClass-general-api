@@ -39,7 +39,7 @@ export async function saveSections(sections: Section[], instructorSections: Inst
         ).join(",");
 
         const insertSectionsQuery = `
-            INSERT INTO sections (id, number, section_type, course_offering_id, start_time, end_time, days)
+            INSERT INTO sections (id, number, section_type, courseoffering_id, start_time, end_time, days)
             VALUES ${sectionValues}
             ON CONFLICT (id) DO NOTHING;
         `;
