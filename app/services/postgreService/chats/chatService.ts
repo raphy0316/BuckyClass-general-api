@@ -4,21 +4,18 @@ import {ChatMessageCounts} from "@/app/types/types";
 export const insertChatRoom = async (room: {
     chat_id: string;
     name: string;
-    type: "course" | "private";
     created_by: string;
 }): Promise<void> => {
     const client = await pool.connect();
     try {
         await client.query(
             `
-            INSERT INTO "chatRoom" (id, name, type, created_by)
-            VALUES ($1, $2, $3, $4);
+            INSERT INTO "chatRoom" (chat_id, name)
+            VALUES ($1, $2);
             `,
             [
                 room.chat_id,
                 room.name,
-                room.type,
-                room.created_by,
             ]
         );
         console.log(`Chat room [${room.chat_id}] inserted into chatRoom table`);
@@ -26,6 +23,30 @@ export const insertChatRoom = async (room: {
         client.release();
     }
 };
+interface ChatRoomUserInput {
+    chat_id: string;
+    user_id: string;
+}
+  
+
+export async function insertChatRoomUser({ chat_id, user_id }: ChatRoomUserInput): Promise<void> {
+const client = await pool.connect();
+try {
+    await client.query(
+    `
+    INSERT INTO "ChatRoomUsers" (chat_id, user_id, joined_at)
+    VALUES ($1, $2, NOW())
+    ON CONFLICT (chat_id, user_id) DO NOTHING
+    `,
+    [chat_id, user_id]
+    );
+} catch (error) {
+    console.error("Failed to insert ChatRoomUser:", error);
+    throw error;
+} finally {
+    client.release();
+}
+}
 
 export const deleteChatRoomById = async (chat_id: string): Promise<void> => {
     const client = await pool.connect();
