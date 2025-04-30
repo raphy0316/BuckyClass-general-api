@@ -1,6 +1,7 @@
 import { pool } from "@/app/config/db";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/app/lib/firebaseAdmin"; 
 
 export async function DELETE(
     request: NextRequest,
@@ -20,7 +21,7 @@ export async function DELETE(
         const { id: chatId, uid: userId } = await params;
 
         await client.query(
-            `DELETE FROM chatroom_participants WHERE chat_id = $1 AND user_id = $2`,
+            `DELETE FROM "ChatroomUsers" WHERE chat_id = $1 AND user_id = $2`,
             [chatId, userId]
         );
 
@@ -65,11 +66,14 @@ export async function POST(
         }
 
         await client.query(
-            `INSERT INTO chatroom_participants (chat_id, user_id)
+            `INSERT INTO "ChatroomUsers" (chat_id, user_id)
              VALUES ($1, $2)
              ON CONFLICT DO NOTHING`,
             [chatId, userId]
         );
+
+        const participantRef = db.ref(`chats/${chatId}/participants/${userId}`);
+        await participantRef.set(true);
 
         return NextResponse.json(
             { success: true },
