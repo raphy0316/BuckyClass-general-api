@@ -1,64 +1,246 @@
 import { pool } from "@/app/config/db";
-import {Course, Grade, Instructor, Review } from "@/app/types/types";
+import { Course, Grade, Instructor, Review, Subject, CourseSubject, Section, SectionGrade, InstructorSection, CourseOffering } from "@/app/types/types";
 
-export const saveCourses = async (courses: Course[]): Promise<void> => {
+//DB Update
+
+export async function clearCourseDataInDB(): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        console.log("Deleting existing Madgrades data...");
+
+        await client.query(`DELETE FROM "CoursesSubjects";`);
+        await client.query(`DELETE FROM instructors;`);
+        await client.query(`DELETE FROM subjects;`);
+        await client.query(`DELETE FROM courses;`);
+
+        await client.query('COMMIT');
+
+        console.log("Madgrades data cleared successfully.");
+    } catch (error) {
+        console.error("Error clearing Madgrades data:", error);
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
+
+export async function saveSections(sections: Section[], instructorSections: InstructorSection[]): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // sections INSERT
+        const sectionValues = sections.map((s) =>
+            `('${s.id}', ${s.number}, '${s.sectionType}', '${s.courseOffering_id}', ${s.start_Time ? `'${s.start_Time}'` : 'NULL'}, ${s.end_Time ? `'${s.end_Time}'` : 'NULL'}, ${s.days ? `'${s.days}'` : 'NULL'})`
+        ).join(",");
+
+        const insertSectionsQuery = `
+            INSERT INTO sections (id, number, section_type, courseoffering_id, start_time, end_time, days)
+            VALUES ${sectionValues}
+            ON CONFLICT (id) DO NOTHING;
+        `;
+
+        await client.query(insertSectionsQuery);
+
+        if (instructorSections.length > 0) {
+            const instructorValues = instructorSections.map((is) =>
+                `('${is.section_id}', '${is.instructor_id}')`
+            ).join(",");
+
+            const insertInstructorSectionsQuery = `
+                INSERT INTO "InstructorsSections" (section_id, instructor_id)
+                VALUES ${instructorValues}
+                ON CONFLICT DO NOTHING;
+            `;
+
+            await client.query(insertInstructorSectionsQuery);
+        }
+
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("saveSections Error:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
+
+export async function saveCourseOfferings(courseOfferings: CourseOffering[]): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const values = courseOfferings.map((o) => 
+            `('${o.id}', '${o.course_id}', '${o.semester}')`
+        ).join(",");
+
+        const query = `
+            INSERT INTO "courseOffering" (id, course_id, semester)
+            VALUES ${values}
+            ON CONFLICT (id) DO NOTHING;
+        `;
+
+        await client.query(query);
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("saveCourseOfferings Error:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
+
+export async function saveGrades(courseGrades: Grade[], sectionGrades: SectionGrade[] ): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const courseGradeValues = courseGrades.map((g) => `('${g.course_id}', ${g.total}, ${g.a_per}, ${g.ab_per}, ${g.b_per}, ${g.bc_per}, ${g.c_per}, ${g.d_per}, ${g.f_per}, ${g.other_per})`).join(",");
+        const courseGradeQuery = `
+            INSERT INTO course_grades (course_id, total, a_per, ab_per, b_per, bc_per, c_per, d_per, f_per, other_per)
+            VALUES ${courseGradeValues}
+            ON CONFLICT (course_id) DO UPDATE
+            SET total = EXCLUDED.total,
+                a_per = EXCLUDED.a_per,
+                ab_per = EXCLUDED.ab_per,
+                b_per = EXCLUDED.b_per,
+                bc_per = EXCLUDED.bc_per,
+                c_per = EXCLUDED.c_per,
+                d_per = EXCLUDED.d_per,
+                f_per = EXCLUDED.f_per,
+                other_per = EXCLUDED.other_per;
+        `;
+
+        const sectionGradeValues = sectionGrades.map((g) => `('${g.section_id}', ${g.total}, ${g.a_per}, ${g.ab_per}, ${g.b_per}, ${g.bc_per}, ${g.c_per}, ${g.d_per}, ${g.f_per}, ${g.other_per})`).join(",");
+        const sectionGradeQuery = `
+            INSERT INTO section_grades (section_id, total, a_per, ab_per, b_per, bc_per, c_per, d_per, f_per, other_per)
+            VALUES ${sectionGradeValues}
+            ON CONFLICT (section_id) DO UPDATE
+            SET total = EXCLUDED.total,
+                a_per = EXCLUDED.a_per,
+                ab_per = EXCLUDED.ab_per,
+                b_per = EXCLUDED.b_per,
+                bc_per = EXCLUDED.bc_per,
+                c_per = EXCLUDED.c_per,
+                d_per = EXCLUDED.d_per,
+                f_per = EXCLUDED.f_per,
+                other_per = EXCLUDED.other_per;
+        `;
+
+        await client.query(courseGradeQuery);
+        await client.query(sectionGradeQuery);
+
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("saveGrades Error:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveSubjects(subjects: Subject[]): Promise<void> {
     const client = await pool.connect();
 
     try {
-        const query = `
-            INSERT INTO courses (id, name, display_name)
+        await client.query("BEGIN");
+
+        const insertQuery = `
+            INSERT INTO subjects (code, name, abbreviation)
             VALUES ($1, $2, $3)
-            ON CONFLICT (id)
-            DO UPDATE SET
-                name = EXCLUDED.name,
-                display_name = EXCLUDED.display_name;
+            ON CONFLICT (abbreviation) DO UPDATE
+            SET name = EXCLUDED.name,
+                abbreviation = EXCLUDED.abbreviation
+        `;
+
+        for (const subject of subjects) {
+            await client.query(insertQuery, [subject.code, subject.name, subject.abbreviation]);
+        }
+
+        await client.query("COMMIT");
+    } catch (error) {
+        await client.query("ROLLBACK");
+        console.error("Error inserting subjects:", error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveCourses(courses: Course[], courseSubjects: CourseSubject[]): Promise<void> {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const insertCourseQuery = `
+            INSERT INTO courses (id, name, number)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (id) DO UPDATE
+            SET name = EXCLUDED.name,
+                number = EXCLUDED.number
+        `;
+
+        const insertCourseSubjectQuery = `
+            INSERT INTO "CoursesSubjects" (course_id, subject_abbreviation)
+            VALUES ($1, $2)
+            ON CONFLICT DO NOTHING
         `;
 
         for (const course of courses) {
-            await client.query(query, [
-                course.id,
-                course.name,
-                course.displayName
-            ]);
+            await client.query(insertCourseQuery, [course.id, course.name, course.number]);
         }
 
-        console.log(`${courses.length} courses saved/updated in PostgreSQL`);
+        for (const cs of courseSubjects) {
+            await client.query(insertCourseSubjectQuery, [cs.course_id, cs.subject_abbreviation]);
+        }
+
+        await client.query("COMMIT");
+    } catch (error) {
+        await client.query("ROLLBACK");
+        console.error("Error inserting courses:", error);
+        throw error;
     } finally {
         client.release();
     }
-};
+}
 
-export const saveGrades = async (grades: Grade): Promise<void> => {
+export async function saveInstructors(instructors: Instructor[]): Promise<void> {
     const client = await pool.connect();
 
     try {
-        const query = `
-            INSERT INTO course_grades (course_id, total, a_per, ab_per, b_per, bc_per, c_per, d_per, f_per, other_per)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-            ON CONFLICT (course_id)
-            DO UPDATE SET total = EXCLUDED.total, a_per = EXCLUDED.a_per, ab_per = EXCLUDED.ab_per,
-            b_per = EXCLUDED.b_per, bc_per = EXCLUDED.bc_per, c_per = EXCLUDED.c_per,
-            d_per = EXCLUDED.d_per, f_per = EXCLUDED.f_per, other_per = EXCLUDED.other_per;
-        `;
+        await client.query("BEGIN");
 
-        await client.query(query, [
-            grades.course_id,
-            grades.total,
-            grades.a_per,
-            grades.ab_per,
-            grades.b_per,
-            grades.bc_per,
-            grades.c_per,
-            grades.d_per,
-            grades.f_per,
-            grades.other_per
-        ]);
+        const insertPromises = instructors.map((instructor) => {
+            return client.query(
+                `INSERT INTO instructors (id, name)
+                 VALUES ($1, $2)
+                 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
+                [instructor.id, instructor.name]
+            );
+        });
 
-        console.log(`Grades saved for course ${grades.course_id}`);
+        await Promise.all(insertPromises);
+
+        await client.query("COMMIT");
+    } catch (error) {
+        await client.query("ROLLBACK");
+        console.error("Failed to insert instructors:", error);
+        throw error;
     } finally {
         client.release();
     }
-};
+}
+
 
 export const getCourses = async (subject?: string, title?: string): Promise<Course[]> => {
     const client = await pool.connect();
@@ -91,47 +273,6 @@ export const getCourses = async (subject?: string, title?: string): Promise<Cour
     }
 };
 
-export const saveInstructors = async (instructors: Instructor[]): Promise<void> => {
-    const client = await pool.connect();
-
-    try {
-        if (!instructors || instructors.length === 0) {
-            console.log("No instructors to save.");
-            return;
-        }
-
-        const instructorQuery = `
-            INSERT INTO instructors (id, name)
-            VALUES ($1, $2)
-            ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
-        `;
-
-        const instructorCourseQuery = `
-            INSERT INTO "InstructorCourseOffering" (instructor_id, offering_id)
-            VALUES ($1, $2)
-            ON CONFLICT (instructor_id, offering_id) DO NOTHING;
-        `;
-
-        for (const instructor of instructors) {
-            await client.query(instructorQuery, [
-                instructor.id,
-                instructor.name
-            ]);
-
-            if (instructor.courseOfferings) {
-                for (const offering of instructor.courseOfferings) {
-                    await client.query(instructorCourseQuery, [
-                        instructor.id,
-                        offering.id
-                    ]);
-                }
-            }
-        }
-        console.log(`${instructors.length} instructors saved/updated in PostgreSQL`);
-    } catch (error) {
-        console.error("Failed to save instructors:", error);
-    }
-}
 
 export const getCourseById = async (id: string): Promise<{ course: Course, grade?: Grade, reviews?: Review[] } | null> => {
     const client = await pool.connect();
