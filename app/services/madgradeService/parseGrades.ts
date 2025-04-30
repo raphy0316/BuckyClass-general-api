@@ -42,7 +42,7 @@ export function parseGrades(
 
   const currentYear = new Date().getFullYear();
   const validYears = new Set<number>();
-  for (let y = currentYear - 4; y <= currentYear; y++) {
+  for (let y = currentYear - 2; y <= currentYear; y++) {
     validYears.add(y);
   }
 

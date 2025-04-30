@@ -40,7 +40,7 @@ export async function fetchSections(
   for (const courseOffering of courseOfferings) {
     const match = courseOffering.semester.match(/\b(\d{4})\b/);
     const semesterYear = match ? parseInt(match[1]) : null;
-    if (!semesterYear || semesterYear < currentYear - 4) continue;
+    if (!semesterYear || semesterYear < currentYear - 2) continue;
 
     try {
       const url = `${ENV.MADGRADES_API_BASE_URL}/course_offerings/${courseOffering.id}`;
