@@ -1,4 +1,4 @@
-import { isNewUser } from "@/app/services/postgreService/users/userService";
+import { isNewUser, markUserAsOld } from "@/app/services/postgreService/users/userService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -18,6 +18,10 @@ export async function GET(
         }
 
         const is_new = await isNewUser(id);
+        
+        if (is_new) {
+            await markUserAsOld(id);
+        }
 
         if (is_new === null) {
             return NextResponse.json(

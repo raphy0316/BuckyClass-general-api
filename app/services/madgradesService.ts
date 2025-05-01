@@ -11,19 +11,24 @@ const ENDPOINTS = {
 };
 
 export const fetchCourses = async (): Promise<Course[]> => {
-    const response = await axios.get(`${ENV.MADGRADES_API_BASE_URL}${ENDPOINTS.COURSES}`, {
-        headers: { Authorization: `Token token=${ENV.API_TOKEN}` }
-    });
+    try {
+        const response = await axios.get(`${ENV.MADGRADES_API_BASE_URL}${ENDPOINTS.COURSES}`, {
+            headers: { Authorization: `Token token=${ENV.API_TOKEN}` }
+        });
 
-    const courses = response.data.results || [];
+        const courses = response.data.results || [];
 
-    return courses.map((course: { uuid: string; name: string; number: number; subjects: { abbreviation: string }[] }) => ({
-        id: course.uuid,
-        name: course.name,
-        displayName: course.subjects?.[0]?.abbreviation && course.number
-            ? `${course.subjects[0].abbreviation} ${course.number}`
-            : course.name 
-    }));
+        const mappedCourses = courses.map((course: { uuid: string; name: string; number: number; subjects: { abbreviation: string }[] }) => ({
+            id: course.uuid,
+            name: course.name,
+            subject_abbreviation: course.subjects?.[0]?.abbreviation || null,
+            number: course.number || null
+        }));
+
+        return mappedCourses;
+    } catch (error) {
+        throw error;
+    }
 };
 
 const calculatePercentage = (count: number, total: number): number => {
