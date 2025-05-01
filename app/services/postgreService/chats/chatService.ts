@@ -60,25 +60,29 @@ export const deleteChatRoomById = async (chat_id: string): Promise<void> => {
 
 export const saveChatRoomMessageCounts = async (chatMessageCounts: ChatMessageCounts): Promise<void> => {
     const client = await pool.connect();
-
+  
     try {
-        const query = `
+      for (const [chatId, { dailyCounts, createdBy, type }] of Object.entries(chatMessageCounts)) {
+        const totalMessageCount = Object.values(dailyCounts).reduce((sum, count) => sum + count, 0);
+  
+        await client.query(`
             INSERT INTO "chatRoom" (id, message_count, created_by, type)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id)
             DO UPDATE SET message_count = EXCLUDED.message_count;
-        `;
+        `, [chatId, totalMessageCount, createdBy, type]);
 
-        for (const [chatId, { messageCount, createdBy, type }] of Object.entries(chatMessageCounts)) {
-            const createdByString = (typeof createdBy === "string")
-            ? new Date(parseInt(createdBy)).toLocaleString()
-            : createdBy;
-            await client.query(query, [
-                chatId, messageCount, createdByString, type
-            ]);
+        for (const [date, count] of Object.entries(dailyCounts)) {
+          await client.query(`
+            INSERT INTO "chatRoomDailyMessageCount" (chat_id, date, message_count)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (chat_id, date)
+            DO UPDATE SET message_count = EXCLUDED.message_count;
+          `, [chatId, date, count]);
         }
-
+      }
+  
     } finally {
-        client.release();
+      client.release();
     }
 };

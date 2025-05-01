@@ -73,15 +73,6 @@ export interface AverageRatingResult {
     average_rating: number | null;
   }
 
-export type ChatMessageCounts = Record<string, { 
-    messageCount: number; 
-    createdBy: string; 
-    type: string; 
-}>;
-
-
-
-
 
 export interface Grade {
     course_id: string;
@@ -129,3 +120,14 @@ export interface InstructorCourseOffering {
     subject_abbreviation: string;
 }
 
+export interface DailyMessageCounts {
+    [date: string]: number;
+}
+
+export interface ChatMessageCounts {
+    [chatId: string]: {
+    dailyCounts: DailyMessageCounts;
+    createdBy: string; 
+    type: string; 
+    }
+}

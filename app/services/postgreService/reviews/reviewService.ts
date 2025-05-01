@@ -1,27 +1,42 @@
 import { pool } from "@/app/config/db";
 import { Review } from "@/app/types/types";
 
-export const updateLikeReview = async (course_id: string, user_id : string, cancel: boolean): Promise<void> => {
+export async function updateLikeReview(course_id: string, review_user_id: string, liked_by_user_id: string) {
     const client = await pool.connect();
     try {
-        const query = `
-                UPDATE reviews
-                SET like_count = like_count + $1
-                WHERE course_id = $2 AND user_id = $3;
-            `;
-        const incrementValue = cancel ? -1 : 1;
-
-        await client.query(query, [
-            incrementValue,
-            course_id,
-            user_id
-        ]);
-
-        console.log(`Like increased`);
-    } finally {
-        client.release();
+        const existing = await client.query(
+        `SELECT 1 FROM review_likes WHERE course_id = $1 AND review_user_id = $2 AND liked_by_user_id = $3`,
+        [course_id, review_user_id, liked_by_user_id]);
+        
+        if ((existing.rowCount ?? 0) > 0) {
+        await client.query(`
+            DELETE FROM review_likes
+            WHERE course_id = $1 AND review_user_id = $2 AND liked_by_user_id = $3`, 
+            [course_id, review_user_id, liked_by_user_id]);
+  
+        await client.query(`
+            UPDATE reviews
+            SET like_count = like_count - 1
+            WHERE course_id = $1 AND user_id = $2`, [course_id, review_user_id]);
+  
+        return "unliked";
+    } else {
+        await client.query(`
+            INSERT INTO review_likes (course_id, review_user_id, liked_by_user_id)
+            VALUES ($1, $2, $3) `, [course_id, review_user_id, liked_by_user_id]);
+  
+        await client.query(`
+            UPDATE reviews
+            SET like_count = like_count + 1
+            WHERE course_id = $1 AND user_id = $2`, [course_id, review_user_id]);
+  
+        return "liked";
     }
-};
+    } finally {
+      client.release();
+    }
+  }
+  
 
 export const saveReview = async (review: Review): Promise<void> => {
     const client = await pool.connect();
