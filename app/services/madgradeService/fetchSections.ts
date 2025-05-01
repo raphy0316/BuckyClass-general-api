@@ -3,6 +3,7 @@ import { ENV } from "@/app/config/env";
 import { Section, CourseOffering, InstructorSection } from "@/app/types/types";
 import axiosInstance from "@/app/lib/axiosInstance";
 import { chunk } from "lodash";
+import axios from "axios";
 
 interface MadgradesSectionResponse {
   uuid: string;
@@ -29,6 +30,8 @@ export interface MadgradesCourseOfferingDetailResponse {
   }[];
 }
 
+
+
 export async function fetchSections(
     courseOfferings: CourseOffering[]
 ): Promise<{ sections: Section[]; instructorSections: InstructorSection[] }> {
@@ -52,8 +55,8 @@ export async function fetchSections(
                 headers: { Authorization: `Token token=${ENV.API_TOKEN}` },
             });
             offeringDetail = data;
-        } catch (error: any) {
-            if (error.response?.status === 403) {
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error) && error.response?.status === 403) {
                 console.warn(`403 Forbidden - skipping courseOffering: ${courseOffering.id} (${courseOffering.semester})`);
                 skippedCourseOfferingIds.push(courseOffering.id);
                 continue;
@@ -88,8 +91,8 @@ export async function fetchSections(
                         }));
 
                         return { section: parsedSection, instructors: parsedInstructors };
-                    } catch (error: any) {
-                        if (error.response?.status === 403) {
+                    } catch (error: unknown) {
+                        if (axios.isAxiosError(error) && error.response?.status === 403) {
                             console.warn(`403 Forbidden - skipping section: ${section.uuid}`);
                             skippedSectionUuids.push(section.uuid);
                         } else {
@@ -97,6 +100,7 @@ export async function fetchSections(
                         }
                         return null;
                     }
+                    
                 })
             );
 

@@ -1,13 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/app/lib/verifyAdmin";
-import { fetchSubjects } from "@/app/services/madgradeService/fetchSubjects";
-import { fetchInstructors } from "@/app/services/madgradeService/fetchInstructors"
-import { fetchCourseOfferings } from "@/app/services/madgradeService/fetchCourseOfferings"
+//import { fetchSubjects } from "@/app/services/madgradeService/fetchSubjects";
+//import { fetchInstructors } from "@/app/services/madgradeService/fetchInstructors"
+//import { fetchCourseOfferings } from "@/app/services/madgradeService/fetchCourseOfferings"
 import { fetchSections } from "@/app/services/madgradeService/fetchSections"
-import { fetchGrades } from "@/app/services/madgradeService/fetchGrades"
-import { saveSubjects, saveInstructors, saveCourses, saveGrades, saveSections, /*clearCourseDataInDB,*/ saveCourseOfferings, saveSectionGrades } from "@/app/services/postgreService/courses/courseService";
+//import { fetchGrades } from "@/app/services/madgradeService/fetchGrades"
+import { /*saveSubjects, saveInstructors, saveCourses, saveGrades,*/ saveSections, /*clearCourseDataInDB, saveCourseOfferings, saveSectionGrades */ } from "@/app/services/postgreService/courses/courseService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
-import { fetchCourses } from "@/app/services/madgradeService/fetchCourses";
+//import { fetchCourses } from "@/app/services/madgradeService/fetchCourses";
+
+import { CourseOffering } from "@/app/types/types";
+import { pool } from "@/app/config/db";
+async function getRecentCourseOfferings(): Promise<CourseOffering[]> {
+    const client = await pool.connect();
+    try {
+        const query = `
+            SELECT id, course_id, semester
+            FROM course_offerings
+            WHERE CAST(SUBSTRING(semester FROM '\\d{4}') AS INTEGER) >= EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER - 5
+        `;
+        const result = await client.query(query);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -39,13 +56,14 @@ export async function POST(request: NextRequest) {
         }
         */
         {
-            const { courses, courseSubjects } = await fetchCourses();
-            console.log("Courses fetched.");
+            //const { courses, courseSubjects } = await fetchCourses();
+            //console.log("Courses fetched.");
             //await saveCourses(courses, courseSubjects);
-            console.log("Courses updated.");
+            //console.log("Courses updated.");
             
             {
-                const { courseOfferings } = await fetchCourseOfferings(courses);
+                //const { courseOfferings } = await fetchCourseOfferings(courses);
+                const courseOfferings = await getRecentCourseOfferings();
                 console.log("CourseOfferings fetched.");
                 //await saveCourseOfferings(courseOfferings);
                 console.log("CourseOfferings updated.");
@@ -57,11 +75,11 @@ export async function POST(request: NextRequest) {
             }
             
 
-            const { grades, sectionGrades } = await fetchGrades(courses);
-            await saveGrades(grades);
-            console.log("Grades fetched.");
-            await saveSectionGrades(sectionGrades);
-            console.log("Grades updated.");
+            // const { grades, sectionGrades } = await fetchGrades(courses);
+            // await saveGrades(grades);
+            // console.log("Grades fetched.");
+            // await saveSectionGrades(sectionGrades);
+            // console.log("Grades updated.");
         }
         
         console.log("Update Complete.");
