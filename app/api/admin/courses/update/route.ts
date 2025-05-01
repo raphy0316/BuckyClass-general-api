@@ -4,19 +4,19 @@ import { verifyAdmin } from "@/app/lib/verifyAdmin";
 //import { fetchInstructors } from "@/app/services/madgradeService/fetchInstructors"
 //import { fetchCourseOfferings } from "@/app/services/madgradeService/fetchCourseOfferings"
 import { fetchSections } from "@/app/services/madgradeService/fetchSections"
-//import { fetchGrades } from "@/app/services/madgradeService/fetchGrades"
-import { /*saveSubjects, saveInstructors, saveCourses, saveGrades,*/ saveSections, /*clearCourseDataInDB, saveCourseOfferings, saveSectionGrades */ } from "@/app/services/postgreService/courses/courseService";
+import { fetchGrades } from "@/app/services/madgradeService/fetchGrades"
+import { /*saveSubjects, saveInstructors, saveCourses,*/ saveGrades, saveSections, /*clearCourseDataInDB, saveCourseOfferings, saveSectionGrades */ } from "@/app/services/postgreService/courses/courseService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 //import { fetchCourses } from "@/app/services/madgradeService/fetchCourses";
 
-import { CourseOffering } from "@/app/types/types";
+import { CourseOffering, Course } from "@/app/types/types";
 import { pool } from "@/app/config/db";
 async function getRecentCourseOfferings(): Promise<CourseOffering[]> {
     const client = await pool.connect();
     try {
         const query = `
             SELECT id, course_id, semester
-            FROM course_offerings
+            FROM "courseOffering"
             WHERE CAST(SUBSTRING(semester FROM '\\d{4}') AS INTEGER) >= EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER - 5
         `;
         const result = await client.query(query);
@@ -25,6 +25,20 @@ async function getRecentCourseOfferings(): Promise<CourseOffering[]> {
         client.release();
     }
 }
+async function getAllCourses(): Promise<Course[]> {
+    const client = await pool.connect();
+    try {
+        const query = `
+            SELECT id, name, number
+            FROM courses
+        `;
+        const result = await client.query(query);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
 
 export async function POST(request: NextRequest) {
     try {
@@ -74,10 +88,11 @@ export async function POST(request: NextRequest) {
                 console.log("Sections updated.");
             }
             
-
-            // const { grades, sectionGrades } = await fetchGrades(courses);
-            // await saveGrades(grades);
-            // console.log("Grades fetched.");
+            const courses  = await getAllCourses();
+            const { grades/*, sectionGrades*/ } = await fetchGrades(courses);
+            console.log("Grades fetched.");
+            await saveGrades(grades);
+            console.log("Grades Updated.");
             // await saveSectionGrades(sectionGrades);
             // console.log("Grades updated.");
         }
