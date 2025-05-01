@@ -38,7 +38,7 @@ export async function fetchSections(
     const skippedCourseOfferingIds: string[] = [];
     const skippedSectionUuids: string[] = [];
 
-    const currentYear = new Date().getFullYear();
+    //const currentYear = new Date().getFullYear();
     let processedCount = 0;
 
     for (const courseOffering of courseOfferings) {
