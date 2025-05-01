@@ -166,12 +166,15 @@ export const getTop3Chats = async (): Promise<{ id: string; name: string; messag
 
     try {
         const query = `
-            SELECT c.id, c.display_name, cr.message_count
-            FROM "chatRoom" cr
-            JOIN "courses" c ON cr.id = c.id
-            WHERE cr.type = 'course'
-            ORDER BY cr.message_count DESC
-            LIMIT 3;
+          SELECT 
+            c.id,
+            cr.id AS course_code,
+            cr.message_count
+          FROM "chatRoom" cr
+          JOIN "CoursesSubjects" cs ON cr.id = cs.subject_abbreviation || ' ' || c.number
+          JOIN courses c ON cs.course_id = c.id
+          ORDER BY cr.message_count DESC
+          LIMIT 3;
         `;
 
         const result = await client.query(query);

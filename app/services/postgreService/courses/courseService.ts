@@ -535,15 +535,17 @@ export const getCourseInfoById = async (id: string): Promise<{
     `;
     const avgGpaResult = await client.query(avgGpaQuery, [id]);
     const averageGpa: number | null = avgGpaResult.rows[0]?.average_gpa ?? null;
-
+    
     const instructorQuery = `
-      SELECT i.name
-      FROM instructors i
-      JOIN "InstructorCourseOffering" ico ON i.id = ico.instructor_id
-      JOIN "courseOffering" co ON ico.offering_id = co.id
-      WHERE co.course_id = $1
-      LIMIT 1
+        SELECT i.name
+        FROM "instructors" i
+        JOIN "InstructorsSections" ins ON i.id = ins.instructor_id
+        JOIN "sections" s ON ins.section_id = s.id
+        JOIN "courseOffering" co ON s.courseOffering_id = co.id
+        WHERE co.course_id = $1
+        LIMIT 1
     `;
+
     const instructorResult = await client.query(instructorQuery, [id]);
     const instructors: string[] = instructorResult.rows.map(r => r.name);
 
