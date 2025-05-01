@@ -22,7 +22,7 @@ export async function fetchSubjects(): Promise<Subject[]> {
 
     while (url) {
         try{
-            await delay(250);
+            
             const { data }: { data: MadgradesSubjectResponse } = await axiosInstance.get(url, {
                 headers: { Authorization: `Token token=${ENV.API_TOKEN}` }
             });
@@ -36,9 +36,10 @@ export async function fetchSubjects(): Promise<Subject[]> {
             subjects.push(...pageSubjects);
 
             url = data.nextPageUrl ?? null;
-
+            await delay(150);
         } catch(error){
             console.log("Error: ", error)
+            await delay(1000);
         }
     }
 

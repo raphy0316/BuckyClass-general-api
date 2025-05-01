@@ -1,5 +1,6 @@
 import { pool } from "@/app/config/db";
 import { Course, Grade, Instructor, Review, Subject, CourseSubject, Section, SectionGrade, InstructorSection, CourseOffering } from "@/app/types/types";
+import { chunk } from "lodash";
 //DB Update
 
 export const getSectionsByCourseId = async (courseId: string): Promise<Section[]> => {
@@ -77,39 +78,63 @@ export async function clearCourseDataInDB(): Promise<void> {
 
 export async function saveSections(sections: Section[], instructorSections: InstructorSection[]): Promise<void> {
     const client = await pool.connect();
+
     try {
-        await client.query('BEGIN');
+        await client.query("BEGIN");
 
-        // sections INSERT
-        const sectionValues = sections.map((s) =>
-            `('${s.id}', ${s.number}, '${s.sectionType}', '${s.courseOffering_id}', ${s.start_Time ? `'${s.start_Time}'` : 'NULL'}, ${s.end_Time ? `'${s.end_Time}'` : 'NULL'}, ${s.days ? `'${s.days}'` : 'NULL'})`
-        ).join(",");
+        const sectionChunks = chunk(sections, 100);
+        for (const group of sectionChunks) {
+            const values: (string | number | null)[] = [];
+            const placeholders: string[] = [];
 
-        const insertSectionsQuery = `
-            INSERT INTO sections (id, number, section_type, courseoffering_id, start_time, end_time, days)
-            VALUES ${sectionValues}
-            ON CONFLICT (id) DO NOTHING;
-        `;
+            group.forEach((s, index) => {
+                const baseIndex = index * 7;
+                placeholders.push(
+                    `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7})`
+                );
+                values.push(
+                    s.id,
+                    s.number,
+                    s.sectionType,
+                    s.courseOffering_id,
+                    s.start_Time || null,
+                    s.end_Time || null,
+                    s.days || null
+                );
+            });
 
-        await client.query(insertSectionsQuery);
+            const insertSectionsQuery = `
+                INSERT INTO sections (id, number, section_type, courseoffering_id, start_time, end_time, days)
+                VALUES ${placeholders.join(",")}
+                ON CONFLICT (id) DO NOTHING;
+            `;
 
-        if (instructorSections.length > 0) {
-            const instructorValues = instructorSections.map((is) =>
-                `('${is.section_id}', '${is.instructor_id}')`
-            ).join(",");
+            await client.query(insertSectionsQuery, values);
+        }
+
+        const instructorChunks = chunk(instructorSections, 100);
+        for (const group of instructorChunks) {
+            const values: (string | number | null)[] = [];
+            const placeholders: string[] = [];
+
+            group.forEach((is, index) => {
+                const baseIndex = index * 2;
+                placeholders.push(`($${baseIndex + 1}, $${baseIndex + 2})`);
+                values.push(is.section_id, is.instructor_id);
+            });
 
             const insertInstructorSectionsQuery = `
                 INSERT INTO "InstructorsSections" (section_id, instructor_id)
-                VALUES ${instructorValues}
+                VALUES ${placeholders.join(",")}
                 ON CONFLICT DO NOTHING;
             `;
 
-            await client.query(insertInstructorSectionsQuery);
+            await client.query(insertInstructorSectionsQuery, values);
         }
 
-        await client.query('COMMIT');
+        await client.query("COMMIT");
     } catch (error) {
-        await client.query('ROLLBACK');
+        await client.query("ROLLBACK");
         console.error("saveSections Error:", error);
         throw error;
     } finally {
@@ -120,24 +145,34 @@ export async function saveSections(sections: Section[], instructorSections: Inst
 
 export async function saveCourseOfferings(courseOfferings: CourseOffering[]): Promise<void> {
     const client = await pool.connect();
+
     try {
-        await client.query('BEGIN');
+        await client.query("BEGIN");
 
-        const values = courseOfferings.map((o) => 
-            `('${o.id}', '${o.course_id}', '${o.semester}')`
-        ).join(",");
+        const offeringChunks = chunk(courseOfferings, 100);
+        for (const group of offeringChunks) {
+            const values: (string | number | null)[] = [];
+            const placeholders: string[] = [];
 
-        const query = `
-            INSERT INTO "courseOffering" (id, course_id, semester)
-            VALUES ${values}
-            ON CONFLICT (id) 
-            DO UPDATE SET semester = EXCLUDED.semester;
-        `;
+            group.forEach((o, index) => {
+                const baseIndex = index * 3;
+                placeholders.push(`($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3})`);
+                values.push(o.id, o.course_id, o.semester);
+            });
 
-        await client.query(query);
-        await client.query('COMMIT');
+            const insertQuery = `
+                INSERT INTO "courseOffering" (id, course_id, semester)
+                VALUES ${placeholders.join(",")}
+                ON CONFLICT (id) DO UPDATE
+                SET semester = EXCLUDED.semester;
+            `;
+
+            await client.query(insertQuery, values);
+        }
+
+        await client.query("COMMIT");
     } catch (error) {
-        await client.query('ROLLBACK');
+        await client.query("ROLLBACK");
         console.error("saveCourseOfferings Error:", error);
         throw error;
     } finally {
@@ -146,32 +181,56 @@ export async function saveCourseOfferings(courseOfferings: CourseOffering[]): Pr
 }
 
 
-export async function saveGrades(courseGrades: Grade[] ): Promise<void> {
+
+export async function saveGrades(courseGrades: Grade[]): Promise<void> {
     const client = await pool.connect();
+
     try {
-        await client.query('BEGIN');
+        await client.query("BEGIN");
 
-        const courseGradeValues = courseGrades.map((g) => `('${g.course_id}', ${g.total}, ${g.a_per}, ${g.ab_per}, ${g.b_per}, ${g.bc_per}, ${g.c_per}, ${g.d_per}, ${g.f_per}, ${g.other_per})`).join(",");
-        const courseGradeQuery = `
-            INSERT INTO course_grades (course_id, total, a_per, ab_per, b_per, bc_per, c_per, d_per, f_per, other_per)
-            VALUES ${courseGradeValues}
-            ON CONFLICT (course_id) DO UPDATE
-            SET total = EXCLUDED.total,
-                a_per = EXCLUDED.a_per,
-                ab_per = EXCLUDED.ab_per,
-                b_per = EXCLUDED.b_per,
-                bc_per = EXCLUDED.bc_per,
-                c_per = EXCLUDED.c_per,
-                d_per = EXCLUDED.d_per,
-                f_per = EXCLUDED.f_per,
-                other_per = EXCLUDED.other_per;
-        `;
+        const gradeChunks = chunk(courseGrades, 100);
+        for (const group of gradeChunks) {
+            const values: (string | number | null)[] = [];
+            const placeholders: string[] = [];
 
-        await client.query(courseGradeQuery);
+            group.forEach((g, index) => {
+                const i = index * 10;
+                placeholders.push(`($${i + 1}, $${i + 2}, $${i + 3}, $${i + 4}, $${i + 5}, $${i + 6}, $${i + 7}, $${i + 8}, $${i + 9}, $${i + 10})`);
+                values.push(
+                    g.course_id,
+                    g.total,
+                    g.a_per,
+                    g.ab_per,
+                    g.b_per,
+                    g.bc_per,
+                    g.c_per,
+                    g.d_per,
+                    g.f_per,
+                    g.other_per
+                );
+            });
 
-        await client.query('COMMIT');
+            const query = `
+                INSERT INTO course_grades (course_id, total, a_per, ab_per, b_per, bc_per, c_per, d_per, f_per, other_per)
+                VALUES ${placeholders.join(",")}
+                ON CONFLICT (course_id) DO UPDATE SET
+                    total = EXCLUDED.total,
+                    a_per = EXCLUDED.a_per,
+                    ab_per = EXCLUDED.ab_per,
+                    b_per = EXCLUDED.b_per,
+                    bc_per = EXCLUDED.bc_per,
+                    c_per = EXCLUDED.c_per,
+                    d_per = EXCLUDED.d_per,
+                    f_per = EXCLUDED.f_per,
+                    other_per = EXCLUDED.other_per;
+            `;
+
+            await client.query(query, values);
+        }
+
+        await client.query("COMMIT");
     } catch (error) {
-        await client.query('ROLLBACK');
+        await client.query("ROLLBACK");
         console.error("saveGrades Error:", error);
         throw error;
     } finally {
@@ -179,38 +238,62 @@ export async function saveGrades(courseGrades: Grade[] ): Promise<void> {
     }
 }
 
-export async function saveSectionGrades(sectionGrades: SectionGrade[] ): Promise<void> {
+export async function saveSectionGrades(sectionGrades: SectionGrade[]): Promise<void> {
     const client = await pool.connect();
+
     try {
-        await client.query('BEGIN');
+        await client.query("BEGIN");
 
-        const sectionGradeValues = sectionGrades.map((g) => `('${g.section_id}', ${g.total}, ${g.a_per}, ${g.ab_per}, ${g.b_per}, ${g.bc_per}, ${g.c_per}, ${g.d_per}, ${g.f_per}, ${g.other_per})`).join(",");
-        const sectionGradeQuery = `
-            INSERT INTO section_grades (section_id, total, a_per, ab_per, b_per, bc_per, c_per, d_per, f_per, other_per)
-            VALUES ${sectionGradeValues}
-            ON CONFLICT (section_id) DO UPDATE
-            SET total = EXCLUDED.total,
-                a_per = EXCLUDED.a_per,
-                ab_per = EXCLUDED.ab_per,
-                b_per = EXCLUDED.b_per,
-                bc_per = EXCLUDED.bc_per,
-                c_per = EXCLUDED.c_per,
-                d_per = EXCLUDED.d_per,
-                f_per = EXCLUDED.f_per,
-                other_per = EXCLUDED.other_per;
-        `;
+        const gradeChunks = chunk(sectionGrades, 100);
+        for (const group of gradeChunks) {
+            const values: (string | number | null)[] = [];
+            const placeholders: string[] = [];
 
-        await client.query(sectionGradeQuery);
+            group.forEach((g, index) => {
+                const i = index * 10;
+                placeholders.push(`($${i + 1}, $${i + 2}, $${i + 3}, $${i + 4}, $${i + 5}, $${i + 6}, $${i + 7}, $${i + 8}, $${i + 9}, $${i + 10})`);
+                values.push(
+                    g.section_id,
+                    g.total,
+                    g.a_per,
+                    g.ab_per,
+                    g.b_per,
+                    g.bc_per,
+                    g.c_per,
+                    g.d_per,
+                    g.f_per,
+                    g.other_per
+                );
+            });
 
-        await client.query('COMMIT');
+            const query = `
+                INSERT INTO section_grades (section_id, total, a_per, ab_per, b_per, bc_per, c_per, d_per, f_per, other_per)
+                VALUES ${placeholders.join(",")}
+                ON CONFLICT (section_id) DO UPDATE SET
+                    total = EXCLUDED.total,
+                    a_per = EXCLUDED.a_per,
+                    ab_per = EXCLUDED.ab_per,
+                    b_per = EXCLUDED.b_per,
+                    bc_per = EXCLUDED.bc_per,
+                    c_per = EXCLUDED.c_per,
+                    d_per = EXCLUDED.d_per,
+                    f_per = EXCLUDED.f_per,
+                    other_per = EXCLUDED.other_per;
+            `;
+
+            await client.query(query, values);
+        }
+
+        await client.query("COMMIT");
     } catch (error) {
-        await client.query('ROLLBACK');
-        console.error("saveGrades Error:", error);
+        await client.query("ROLLBACK");
+        console.error("saveSectionGrades Error:", error);
         throw error;
     } finally {
         client.release();
     }
 }
+
 
 export async function saveSubjects(subjects: Subject[]): Promise<void> {
     const client = await pool.connect();
@@ -218,16 +301,26 @@ export async function saveSubjects(subjects: Subject[]): Promise<void> {
     try {
         await client.query("BEGIN");
 
-        const insertQuery = `
-            INSERT INTO subjects (code, name, abbreviation)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (abbreviation) DO UPDATE
-            SET name = EXCLUDED.name,
-                abbreviation = EXCLUDED.abbreviation
-        `;
+        const subjectChunks = chunk(subjects, 100);
+        for (const group of subjectChunks) {
+            const values: (string | number | null)[] = [];
+            const placeholders: string[] = [];
 
-        for (const subject of subjects) {
-            await client.query(insertQuery, [subject.code, subject.name, subject.abbreviation]);
+            group.forEach((s, index) => {
+                const baseIndex = index * 3;
+                placeholders.push(`($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3})`);
+                values.push(s.code, s.name, s.abbreviation);
+            });
+
+            const insertQuery = `
+                INSERT INTO subjects (code, name, abbreviation)
+                VALUES ${placeholders.join(", ")}
+                ON CONFLICT (abbreviation) DO UPDATE
+                SET name = EXCLUDED.name,
+                    abbreviation = EXCLUDED.abbreviation
+            `;
+
+            await client.query(insertQuery, values);
         }
 
         await client.query("COMMIT");
@@ -240,32 +333,53 @@ export async function saveSubjects(subjects: Subject[]): Promise<void> {
     }
 }
 
+
 export async function saveCourses(courses: Course[], courseSubjects: CourseSubject[]): Promise<void> {
     const client = await pool.connect();
 
     try {
         await client.query("BEGIN");
 
-        const insertCourseQuery = `
-            INSERT INTO courses (id, name, number)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (id) DO UPDATE
-            SET name = EXCLUDED.name,
-                number = EXCLUDED.number
-        `;
+        const courseChunks = chunk(courses, 100);
+        for (const group of courseChunks) {
+            const values: (string | number | null)[] = [];
+            const placeholders: string[] = [];
 
-        const insertCourseSubjectQuery = `
-            INSERT INTO "CoursesSubjects" (course_id, subject_abbreviation)
-            VALUES ($1, $2)
-            ON CONFLICT DO NOTHING
-        `;
+            group.forEach((course, index) => {
+                const base = index * 3;
+                placeholders.push(`($${base + 1}, $${base + 2}, $${base + 3})`);
+                values.push(course.id, course.name, course.number);
+            });
 
-        for (const course of courses) {
-            await client.query(insertCourseQuery, [course.id, course.name, course.number]);
+            const insertCoursesQuery = `
+                INSERT INTO courses (id, name, number)
+                VALUES ${placeholders.join(", ")}
+                ON CONFLICT (id) DO UPDATE
+                SET name = EXCLUDED.name,
+                    number = EXCLUDED.number;
+            `;
+
+            await client.query(insertCoursesQuery, values);
         }
 
-        for (const cs of courseSubjects) {
-            await client.query(insertCourseSubjectQuery, [cs.course_id, cs.subject_abbreviation]);
+        const courseSubjectChunks = chunk(courseSubjects, 100);
+        for (const group of courseSubjectChunks) {
+            const values: (string | number | null)[] = [];
+            const placeholders: string[] = [];
+
+            group.forEach((cs, index) => {
+                const base = index * 2;
+                placeholders.push(`($${base + 1}, $${base + 2})`);
+                values.push(cs.course_id, cs.subject_abbreviation);
+            });
+
+            const insertCourseSubjectsQuery = `
+                INSERT INTO "CoursesSubjects" (course_id, subject_abbreviation)
+                VALUES ${placeholders.join(", ")}
+                ON CONFLICT DO NOTHING;
+            `;
+
+            await client.query(insertCourseSubjectsQuery, values);
         }
 
         await client.query("COMMIT");
@@ -284,16 +398,25 @@ export async function saveInstructors(instructors: Instructor[]): Promise<void> 
     try {
         await client.query("BEGIN");
 
-        const insertPromises = instructors.map((instructor) => {
-            return client.query(
-                `INSERT INTO instructors (id, name)
-                 VALUES ($1, $2)
-                 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
-                [instructor.id, instructor.name]
-            );
-        });
+        const instructorChunks = chunk(instructors, 100);
+        for (const group of instructorChunks) {
+            const values: (string | number | null)[] = [];
+            const placeholders: string[] = [];
 
-        await Promise.all(insertPromises);
+            group.forEach((instructor, index) => {
+                const base = index * 2;
+                placeholders.push(`($${base + 1}, $${base + 2})`);
+                values.push(instructor.id, instructor.name);
+            });
+
+            const insertQuery = `
+                INSERT INTO instructors (id, name)
+                VALUES ${placeholders.join(", ")}
+                ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
+            `;
+
+            await client.query(insertQuery, values);
+        }
 
         await client.query("COMMIT");
     } catch (error) {
@@ -412,15 +535,17 @@ export const getCourseInfoById = async (id: string): Promise<{
     `;
     const avgGpaResult = await client.query(avgGpaQuery, [id]);
     const averageGpa: number | null = avgGpaResult.rows[0]?.average_gpa ?? null;
-
+    
     const instructorQuery = `
-      SELECT i.name
-      FROM instructors i
-      JOIN "InstructorCourseOffering" ico ON i.id = ico.instructor_id
-      JOIN "courseOffering" co ON ico.offering_id = co.id
-      WHERE co.course_id = $1
-      LIMIT 1
+        SELECT i.name
+        FROM "instructors" i
+        JOIN "InstructorsSections" ins ON i.id = ins.instructor_id
+        JOIN "sections" s ON ins.section_id = s.id
+        JOIN "courseOffering" co ON s.courseOffering_id = co.id
+        WHERE co.course_id = $1
+        LIMIT 1
     `;
+
     const instructorResult = await client.query(instructorQuery, [id]);
     const instructors: string[] = instructorResult.rows.map(r => r.name);
 
