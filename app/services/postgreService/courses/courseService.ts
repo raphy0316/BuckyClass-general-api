@@ -7,14 +7,14 @@ export const getSectionsByCourseId = async (courseId: string): Promise<Section[]
     const client = await pool.connect();
 
     try {
-        const currentSemester = "Spring 2025";
+        const currentSemester = "Fall 2024";
 
         const query = `
             SELECT 
             s.id,
             s.number,
             s.section_type,
-            s.courseOffering_id,
+            s.courseoffering_id,
             (s.days || ' ' || TO_CHAR(s.start_time, 'HH24:MI') || ' - ' || TO_CHAR(s.end_time, 'HH24:MI')) AS meeting_time
             FROM "sections" s
             JOIN "courseOffering" co ON s.courseOffering_id = co.id
@@ -37,18 +37,36 @@ export async function getCoursesByMajor(major: string) {
             SELECT DISTINCT
                 c.id,
                 c.name,
-                cs.subject_abbreviation || ' ' || c.number AS course_code,
+                cs.subject_abbreviation || ' ' || c.number AS course_code
             FROM "MajorsSubjects" ms
             JOIN "CoursesSubjects" cs ON ms.subject_abbreviation = cs.subject_abbreviation
-            JOIN "Courses" c ON cs.course_id = c.id
+            JOIN "courses" c ON cs.course_id = c.id
             WHERE ms.major = $1
         `;
-        const result = await client.query(query, [major.toUpperCase()]);
+        const result = await client.query(query, [major]);
         return result.rows;
     } finally {
         client.release();
     }
 }
+
+export async function getCourseCode(course_id: string): Promise<string | null> {
+    const client = await pool.connect();
+    try {
+        const query = `
+            SELECT cs.subject_abbreviation || ' ' || c.number AS course_code
+            FROM "courses" c
+            JOIN "CoursesSubjects" cs ON c.id = cs.course_id
+            WHERE c.id = $1
+            LIMIT 1
+        `;
+        const result = await client.query(query, [course_id]);
+        return result.rows[0]?.course_code ?? null;
+    } finally {
+        client.release();
+    }
+}
+
 
 
 export async function clearCourseDataInDB(): Promise<void> {
