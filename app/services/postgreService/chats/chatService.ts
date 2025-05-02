@@ -62,15 +62,14 @@ export const saveChatRoomMessageCounts = async (chatMessageCounts: ChatMessageCo
     const client = await pool.connect();
   
     try {
-      for (const [chatId, { dailyCounts, createdBy, type }] of Object.entries(chatMessageCounts)) {
+      for (const [chatId, { dailyCounts}] of Object.entries(chatMessageCounts)) {
         const totalMessageCount = Object.values(dailyCounts).reduce((sum, count) => sum + count, 0);
   
         await client.query(`
-            INSERT INTO "chatRoom" (id, message_count, created_by, type)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (id)
-            DO UPDATE SET message_count = EXCLUDED.message_count;
-        `, [chatId, totalMessageCount, createdBy, type]);
+            UPDATE "chatRoom"
+            SET message_count = $1
+            WHERE chat_id = $2;
+          `, [totalMessageCount, chatId]);          
 
         for (const [date, count] of Object.entries(dailyCounts)) {
           await client.query(`
