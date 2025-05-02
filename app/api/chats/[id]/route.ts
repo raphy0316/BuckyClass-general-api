@@ -1,6 +1,7 @@
 import { db } from "@/app/lib/firebaseAdmin";
 import { saveVerifiedUser } from "@/app/services/postgreService/users/userService";
 import { deleteChatRoomById } from "@/app/services/postgreService/chats/chatService";
+import { getCourseCode } from "@/app/services/postgreService/courses/courseService";
 import { verifyFirebaseAuth } from "@/app/middlewares/firebaseAuth";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/app/lib/verifyAdmin"
@@ -27,7 +28,9 @@ export async function DELETE(
             );
         }
 
-        const chatRef = db.ref(`chats/${chatId}`);
+        const course_code = await getCourseCode(chatId);
+
+        const chatRef = db.ref(`chats/${course_code}`);
         const snapshot = await chatRef.get();
 
         if (!snapshot.exists()) {

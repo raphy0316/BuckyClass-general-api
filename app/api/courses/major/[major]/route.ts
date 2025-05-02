@@ -7,6 +7,7 @@ export async function GET(
     { params }: { params: Promise<{ major: string }> }
 ) {
     try {
+        
         const user = await verifyFirebaseAuth(request);
         if (!user) {
             return NextResponse.json(
@@ -16,7 +17,9 @@ export async function GET(
         }
 
         const { major } = await params;
+        const decodedMajor = decodeURIComponent(major);
 
+        console.log("Decoded major:", decodedMajor);
         if (!major) {
             return NextResponse.json(
                 { error: "Missing major" },
@@ -24,7 +27,7 @@ export async function GET(
             );
         }
 
-        const courses = await getCoursesByMajor(major);
+        const courses = await getCoursesByMajor(decodedMajor);
 
         return NextResponse.json(courses, { status: 200 });
     } catch (error) {

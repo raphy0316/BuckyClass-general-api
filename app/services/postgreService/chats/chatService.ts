@@ -51,7 +51,7 @@ try {
 export const deleteChatRoomById = async (chat_id: string): Promise<void> => {
     const client = await pool.connect();
     try {
-        await client.query(`DELETE FROM "chatRoom" WHERE id = $1`, [chat_id]);
+        await client.query(`DELETE FROM "chatRoom" WHERE chat_id = $1`, [chat_id]);
         console.log(`Chat room [${chat_id}] deleted from PostgreSQL`);
     } finally {
         client.release();
