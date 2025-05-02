@@ -8,37 +8,45 @@ export const fetchRecentChatMessageCounts = async (): Promise<ChatMessageCounts>
 
   const now = new Date();
   const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
-
+  
+  const dateKeys: string[] = [];
+  for (let i = 9; i >= 0; i--) {
+    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    const dateString = date.toISOString().split("T")[0];
+    dateKeys.push(dateString);
+  }
+  
   const chatMessageCounts: ChatMessageCounts = {};
-
+  
   for (const chatId in chats) {
     const chatInfo = chats[chatId];
     if (chatInfo.type !== "course") continue;
-
+  
     const messages = chatInfo.messages || {};
     const dailyCounts: DailyMessageCounts = {};
-
+  
+    for (const date of dateKeys) {
+      dailyCounts[date] = 0;
+    }
+  
     for (const messageId in messages) {
       const message = messages[messageId];
       if (!message.timestamp) continue;
-
+  
       const messageDate = new Date(message.timestamp);
       if (messageDate >= tenDaysAgo && messageDate <= now) {
-        const dateString = messageDate.toISOString().split("T")[0]; 
-        dailyCounts[dateString] = (dailyCounts[dateString] || 0) + 1;
+        const dateString = messageDate.toISOString().split("T")[0];
+        dailyCounts[dateString] += 1;
       }
     }
-
-    const createdBy = chatInfo.createdBy || "Unknown";
-    const type = chatInfo.type || "Unknown";
-
+  
     chatMessageCounts[chatId] = {
       dailyCounts,
-      createdBy,
-      type
+      createdBy: chatInfo.createdBy || "Unknown",
+      type: chatInfo.type || "Unknown"
     };
   }
-
+  
   return chatMessageCounts;
 };
 
