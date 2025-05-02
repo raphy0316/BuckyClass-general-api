@@ -62,7 +62,7 @@ export const saveChatRoomMessageCounts = async (chatMessageCounts: ChatMessageCo
     const client = await pool.connect();
   
     try {
-      for (const [chatId, { dailyCounts, createdBy, type }] of Object.entries(chatMessageCounts)) {
+      for (const [chatId, { dailyCounts}] of Object.entries(chatMessageCounts)) {
         const totalMessageCount = Object.values(dailyCounts).reduce((sum, count) => sum + count, 0);
   
         await client.query(`
