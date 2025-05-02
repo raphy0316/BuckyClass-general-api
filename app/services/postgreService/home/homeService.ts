@@ -174,25 +174,15 @@ export const getTop3Chats = async (): Promise<{ name: string; message_count: num
   const client = await pool.connect();
   try {
     const query = `
-      WITH top_chats AS (
-        SELECT
-          cr.chat_id,
-          cs.subject_abbreviation || ' ' || c.number AS display_name,
-          cr.message_count
-        FROM "chatRoom" cr
-        JOIN "courses" c ON cr.chat_id = c.id::text
-        JOIN "CoursesSubjects" cs ON cr.chat_id = cs.course_id::text
-       	ORDER BY cr.message_count DESC
-        LIMIT 3
-      )
       SELECT
-        tc.display_name AS name,
-        tc.message_count,
-        mc.date,
-        mc.message_count AS count
-      FROM top_chats tc
-      LEFT JOIN "chatRoomDailyMessageCount" mc ON tc.chat_id = mc.chat_id
-      ORDER BY tc.message_count DESC, mc.date ASC
+        c.name,
+        c.message_count,
+        ARRAY_AGG(m.message_count ORDER BY m.date) AS chatData
+      FROM "chatRoomDailyMessageCount" m
+      JOIN "chatRoom" c ON m.chat_id = c.chat_id
+      WHERE m.date BETWEEN CURRENT_DATE - INTERVAL '9 days' AND CURRENT_DATE
+      GROUP BY c.name, c.message_count
+      ORDER BY c.message_count DESC;
     `;
     const result = await client.query(query);
     return result.rows;
