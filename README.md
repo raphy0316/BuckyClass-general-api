@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📡 Grow - Backend API Server
 
-## Getting Started
+Grow is a course-based social platform that enables students to view academic info, write reviews, and engage in real-time chat.  
+This backend is built with **Next.js API Routes**, using **Firebase Authentication**, **Firebase Realtime Database**, and **PostgreSQL** with **Prisma ORM**.
 
-First, run the development server:
+## 🛠 Tech Stack
+- Next.js (API Routes) + TypeScript
+- PostgreSQL
+- Firebase Admin SDK (Auth, Realtime DB)
+- Axios
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ⚙ Core Features
+- 🔐 Auth & Authorization (Firebase ID Token)
+- 📚 Course Info API (from Madgrades)
+- ✍️ Review CRUD API
+- 💬 Chatroom metadata API (Firebase-linked)
+- 👤 User Profile & Enrollment API
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔐 Auth Flow
+Clients send Firebase ID Token via header:  
+Authorization: Bearer <token>  
+Server verifies and extracts UID, email, isAdmin
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🧬 Database Schema (Prisma)
+https://dbdiagram.io/d/6813d84f1ca52373f5228e49
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🔄 Madgrades Sync
+- Sync script: admin/courses/update/route.ts  
+- Processes thousands of rows using chunked, transactional inserts  
+- Only retains most recent 5 years of data  
 
-## Learn More
+## 🚀 Getting Started
+1. Install dependencies  
+   npm install
 
-To learn more about Next.js, take a look at the following resources:
+2. Set environment variables in `.env`  
+   DATABASE_URL=...  
+   FIREBASE_PROJECT_ID=...  
+   FIREBASE_CLIENT_EMAIL=...  
+   FIREBASE_PRIVATE_KEY=...
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. Start dev server  
+   npm run dev
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📌 Endpoints
+https://plume-trouser-a64.notion.site/API-197fa6de67e3804eb1c5eb42a5f2da4f?pvs=4
 
-## Deploy on Vercel
+## 👤 Admin Capabilities
+- Manage Course Chatting room
+- Update data from Madgrade API 
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔗 Real-time Chat
+- Real-time messages handled in Firebase Realtime Database  
+- Backend manages only course chat metadata.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 👨‍💻 Developer
+Backend: Hyuntaek Oh, Chaerin Yoo, Youngjun Jung  
+Frontend: https://github.com/raphy0316/BuckyClass-mobile-ReactNative
+
+
