@@ -54,7 +54,7 @@ https://plume-trouser-a64.notion.site/API-197fa6de67e3804eb1c5eb42a5f2da4f?pvs=4
 - Backend manages only course chat metadata.
 
 ##  Developer
-Backend: Hyuntaek Oh, Chaerin Yoo, Youngjun Jung  
+Backend: Hyuntaek Oh, Cheryn Kim, Youngjun Jung  
 Frontend: https://github.com/raphy0316/BuckyClass-mobile-ReactNative
 
 
