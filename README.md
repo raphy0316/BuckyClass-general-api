@@ -3,6 +3,9 @@
 Grow is a course-based social platform that enables students to view academic info, write reviews, and engage in real-time chat.  
 This backend is built with **Next.js API Routes**, using **Firebase Authentication**, **Firebase Realtime Database**, and **PostgreSQL** with **Prisma ORM**.
 
+## Related Links
+[Mobile App](https://github.com/raphy0316/BuckyClass-mobile-ReactNative) · [Portfolio](https://www.notion.so/Grow-27dd0b7951b6804a8a4cf7cb0f7489d1?source=copy_link)
+
 ## Tech Stack
 - Next.js (API Routes) + TypeScript
 - PostgreSQL
